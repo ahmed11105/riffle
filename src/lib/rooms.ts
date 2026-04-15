@@ -13,6 +13,10 @@ export type RoomRow = {
   rounds_total: number;
   current_round: number;
   starting_bank: number;
+  genres: string[];
+  artist_query: string | null;
+  phase_started_at: string | null;
+  paused: boolean;
   created_at: string;
 };
 
@@ -45,8 +49,33 @@ export type RoomRoundRow = {
   wagers: Record<string, WagerRecord>;
   guesses: Record<string, GuessRecord>;
   revealed_at: string | null;
-  // Not in DB: we hydrate the track client-side from an API call.
 };
+
+// Phase durations in seconds. Tuned for a snappy game loop.
+export const PHASE_DURATIONS: Record<RoomStatus, number> = {
+  lobby: 0,
+  wager: 10,
+  guess: 30,
+  reveal: 6,
+  finished: 0,
+};
+
+// Available genre chips in the lobby. Labels must match the categories that
+// the server's track picker knows how to seed from iTunes.
+export const GENRE_CHIPS: { id: string; label: string }[] = [
+  { id: "popular", label: "Popular Now" },
+  { id: "2020s", label: "2020s" },
+  { id: "2010s", label: "2010s" },
+  { id: "2000s", label: "2000s" },
+  { id: "90s", label: "90s" },
+  { id: "80s", label: "80s" },
+  { id: "rock", label: "Rock" },
+  { id: "hiphop", label: "Hip Hop" },
+  { id: "rnb", label: "R&B" },
+  { id: "dance", label: "Dance" },
+  { id: "indie", label: "Indie" },
+  { id: "latin", label: "Latin" },
+];
 
 const PLAYER_STORAGE_KEY = "riffle:player";
 
@@ -79,7 +108,7 @@ export function saveLocalPlayer(name: string): LocalPlayer {
 }
 
 export function generateRoomCode(length = 6): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing chars
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
   for (let i = 0; i < length; i++) {
     out += alphabet[Math.floor(Math.random() * alphabet.length)];
