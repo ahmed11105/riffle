@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --background: #1a140c;
+  --foreground: #fef3c7;
+  --paper: #fbf6ea;
+  --ink: #1c1917;
+  --accent: #fbbf24;
+  --accent-2: #fb923c;
+  --vinyl: #0a0907;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(ellipse at top, rgba(251, 191, 36, 0.08), transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(251, 146, 60, 0.05), transparent 60%);
+  min-height: 100svh;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); }
+  70%  { box-shadow: 0 0 0 20px rgba(251, 191, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+.animate-pulse-ring { animation: pulse-ring 1.8s ease-out infinite; }
+
+/* Slim volume slider — standard horizontal range, rotated via parent.
+   The element box is 32px tall so the rotated hit target is 32px wide,
+   while the visible track stays a thin 4px line. */
+.riffle-vol-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+}
+.riffle-vol-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(254, 243, 199, 0.25);
+  border-radius: 9999px;
+}
+.riffle-vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fbbf24;
+  border: 2px solid #1c1917;
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  margin-top: -6px;
+}
+.riffle-vol-slider::-moz-range-track {
+  height: 4px;
+  background: rgba(254, 243, 199, 0.25);
+  border-radius: 9999px;
+  border: none;
+}
+.riffle-vol-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fbbf24;
+  border: 2px solid #1c1917;
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  border: 2px solid #1c1917;
+}

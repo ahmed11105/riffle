@@ -1,0 +1,133 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Logo } from "@/components/branding/Logo";
+import { Mascot } from "@/components/branding/Mascot";
+import { loadLocalPlayer, saveLocalPlayer } from "@/lib/rooms";
+
+export default function RoomsPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const existing = loadLocalPlayer();
+    if (existing) setName(existing.name);
+  }, []);
+
+  async function createRoom() {
+    if (!name.trim()) {
+      setError("Enter a name first");
+      return;
+    }
+    setError(null);
+    setCreating(true);
+    saveLocalPlayer(name);
+    try {
+      const res = await fetch("/api/rooms/create", { method: "POST" });
+      const json = (await res.json()) as { code?: string; error?: string };
+      if (!res.ok || !json.code) throw new Error(json.error ?? "create failed");
+      router.push(`/rooms/${json.code}?host=1`);
+    } catch (e) {
+      setError(String(e));
+      setCreating(false);
+    }
+  }
+
+  async function joinRoom() {
+    if (!name.trim()) {
+      setError("Enter a name first");
+      return;
+    }
+    if (!code.trim()) {
+      setError("Enter a room code");
+      return;
+    }
+    setError(null);
+    setJoining(true);
+    saveLocalPlayer(name);
+    router.push(`/rooms/${code.trim().toUpperCase()}`);
+  }
+
+  return (
+    <main className="flex flex-1 flex-col items-center px-6 py-10">
+      <header className="flex w-full max-w-5xl items-center justify-between">
+        <Link href="/"><Logo /></Link>
+        <nav className="hidden gap-6 text-sm font-bold uppercase tracking-wider sm:flex">
+          <Link href="/daily" className="hover:text-amber-300">Daily</Link>
+          <Link href="/solo" className="hover:text-amber-300">Solo</Link>
+          <Link href="/rooms" className="text-amber-300">Rooms</Link>
+        </nav>
+      </header>
+
+      <section className="mt-10 flex w-full max-w-md flex-col items-center text-center">
+        <Mascot size={120} className="mb-3 drop-shadow-[0_8px_0_rgba(0,0,0,0.9)]" />
+        <h1 className="text-5xl font-black leading-none tracking-tighter text-amber-100">
+          Play with Friends
+        </h1>
+        <p className="mt-3 text-amber-100/70">
+          Create a room, share the code, and wager coins each round.
+        </p>
+
+        <div className="mt-6 w-full rounded-3xl border-4 border-stone-900 bg-stone-50 p-5 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
+          <label className="block text-left text-xs font-bold uppercase tracking-wider text-stone-500">
+            Your name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={24}
+            placeholder="e.g. Alex"
+            className="mt-1 w-full rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-2.5 font-black text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-amber-300"
+          />
+
+          <button
+            type="button"
+            onClick={createRoom}
+            disabled={creating}
+            className="mt-4 w-full rounded-full border-4 border-stone-900 bg-amber-400 px-5 py-3 text-base font-black shadow-[0_4px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+          >
+            {creating ? "Creating…" : "Create a Room"}
+          </button>
+
+          <div className="my-4 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-stone-400">
+            <div className="h-px flex-1 bg-stone-300" />
+            or join
+            <div className="h-px flex-1 bg-stone-300" />
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="Room code"
+              maxLength={6}
+              className="flex-1 rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-2.5 text-center font-mono text-lg font-black tracking-widest text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-amber-300"
+            />
+            <button
+              type="button"
+              onClick={joinRoom}
+              disabled={joining || code.length < 4}
+              className="rounded-full border-2 border-stone-900 bg-stone-900 px-5 py-2.5 text-sm font-black text-stone-50 transition hover:bg-stone-800 disabled:opacity-50"
+            >
+              Join
+            </button>
+          </div>
+
+          {error && (
+            <div className="mt-3 rounded-xl bg-rose-100 px-3 py-2 text-sm font-bold text-rose-700">
+              {error}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
