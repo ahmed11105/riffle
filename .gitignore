@@ -40,4 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# supabase cli cache
+supabase/.temp/
+supabase/.branches/
