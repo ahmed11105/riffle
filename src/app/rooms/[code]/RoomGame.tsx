@@ -524,7 +524,7 @@ export function RoomGame({ code }: { code: string }) {
         isHost={isHost}
       />
 
-      <header className="flex w-full max-w-md items-center justify-between gap-2">
+      <header className="flex w-full max-w-md items-center justify-between gap-2 pl-12 sm:pl-0">
         {/* Left: pause / host */}
         {isHost && room.status !== "lobby" && room.status !== "finished" ? (
           <button

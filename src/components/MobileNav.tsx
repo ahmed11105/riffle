@@ -82,9 +82,9 @@ export function MobileNav() {
         }`}
       >
         <div className="flex items-center justify-between border-b-4 border-stone-900 px-5 py-4">
-          {/* !inline-flex overrides Logo's mobile-hidden default so the
-              admin 7-tap gesture stays reachable on phones. */}
-          <Logo className="!inline-flex" />
+          {/* Drop Logo's mobile left margin (it exists to clear the floating
+              hamburger on page headers, not needed inside the drawer). */}
+          <Logo className="!ml-0" />
           <button
             type="button"
             onClick={() => setOpen(false)}

@@ -15,10 +15,23 @@ export default function RoomsPage() {
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shortPlaceholder, setShortPlaceholder] = useState(false);
 
   useEffect(() => {
     const existing = loadLocalPlayer();
     if (existing) setName(existing.name);
+  }, []);
+
+  // Swap the join input's placeholder from "Room code" to "Code" on
+  // narrow viewports so the longer text doesn't push the Join button
+  // outside the card.
+  useEffect(() => {
+    function check() {
+      setShortPlaceholder(window.innerWidth < 380);
+    }
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   async function createRoom() {
@@ -114,20 +127,20 @@ export default function RoomsPage() {
             <div className="h-px flex-1 bg-stone-300" />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex w-full gap-2">
             <input
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="Room code"
+              placeholder={shortPlaceholder ? "Code" : "Room code"}
               maxLength={6}
-              className="flex-1 rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-2.5 text-center font-mono text-lg font-black tracking-widest text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-amber-300"
+              className="min-w-0 flex-1 rounded-full border-2 border-stone-900 bg-stone-100 px-3 py-2.5 text-center font-mono text-lg font-black tracking-widest text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-4 focus:ring-amber-300 sm:px-4"
             />
             <button
               type="button"
               onClick={joinRoom}
               disabled={joining || code.length < 4}
-              className="rounded-full border-2 border-stone-900 bg-stone-900 px-5 py-2.5 text-sm font-black text-stone-50 transition hover:bg-stone-800 disabled:opacity-50"
+              className="shrink-0 rounded-full border-2 border-stone-900 bg-stone-900 px-3 py-2.5 text-sm font-black text-stone-50 transition hover:bg-stone-800 disabled:opacity-50 sm:px-5"
             >
               Join
             </button>
