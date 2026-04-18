@@ -7,6 +7,7 @@ import { GENRE_CHIPS } from "@/lib/rooms";
 import { cn } from "@/lib/utils";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAdminMode } from "@/lib/admin";
 
 const FREE_ARTIST_SLOTS = 1;
 const EXTRA_ARTIST_COST = 25;
@@ -56,7 +57,11 @@ export function LobbyConfig({
   const [unlocking, setUnlocking] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const { spend, balance, ready: riffsReady } = useRiffs();
-  const { isPro } = useAuth();
+  const { isPro: realIsPro } = useAuth();
+  const [adminOn] = useAdminMode();
+  // Treat admin as Pro for all UX gates: unlimited rounds + unlimited
+  // artist slots + no Riffs charge.
+  const isPro = realIsPro || adminOn;
 
   // Available slots = the free baseline plus any slots the host has
   // already paid Riffs for in this room session. Removing an artist

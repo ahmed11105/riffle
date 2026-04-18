@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminRequest } from "@/lib/adminAuth";
 import { generateRoomCode } from "@/lib/rooms";
 
 const HOST_COOKIE = "riffle_host";
@@ -33,8 +34,13 @@ export async function POST(req: NextRequest) {
   // riffle_host cookie set below.
   const { fingerprint, isNew } = await ensureHostCookie();
 
-  let isPro = false;
-  if (user) {
+  // Admin header (Authorization: Bearer ADMIN_SECRET) gives the same
+  // unlimited treatment as Pro, so internal testing can hammer rooms
+  // without burning daily caps.
+  const isAdmin = isAdminRequest(req);
+
+  let isPro = isAdmin;
+  if (!isAdmin && user) {
     const { data } = await supabase.rpc("is_pro_active");
     isPro = data === true;
   }

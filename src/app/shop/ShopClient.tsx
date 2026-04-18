@@ -9,6 +9,7 @@ import { PRO_MONTHLY_GBP, PRO_PERKS } from "@/lib/riffs/pro";
 import { createClient } from "@/lib/supabase/client";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
+import { useAdminMode } from "@/lib/admin";
 
 type Pack = {
   slug: string;
@@ -34,8 +35,11 @@ export function ShopClient({
   packs: Pack[];
   unlockedSlugs: string[];
 }) {
-  const { user, isAnonymous, isPro, signInWithEmail } = useAuth();
+  const { user, isAnonymous, isPro: realIsPro, signInWithEmail } = useAuth();
   const { balance, claimAdReward, ready } = useRiffs();
+  const [adminOn] = useAdminMode();
+  // Admin = effective Pro for all UX gates (ads hidden, packs free, etc).
+  const isPro = realIsPro || adminOn;
   const { track } = useAnalytics();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,9 +68,11 @@ export function ShopClient({
     setUnlockingSlug(slug);
     try {
       const supabase = createClient();
+      // Admin bypass: cost = 0 path is allowed by the RPC and records as 'free'.
+      const cost = adminOn ? 0 : PACK_COST;
       const { data, error } = await supabase.rpc("unlock_pack_with_riffs", {
         p_pack_slug: slug,
-        p_cost: PACK_COST,
+        p_cost: cost,
       });
       if (error) {
         setCheckoutMsg(error.message.includes("Insufficient")
@@ -75,7 +81,7 @@ export function ShopClient({
         return;
       }
       setUnlockedNow((prev) => new Set(prev).add(slug));
-      track(EVENTS.PACK_UNLOCKED, { slug, via: "riffs", riffs: PACK_COST });
+      track(EVENTS.PACK_UNLOCKED, { slug, via: adminOn ? "admin" : "riffs", riffs: cost });
       router.refresh();
       if (data === "already_unlocked") {
         setCheckoutMsg("You already own this pack.");
@@ -400,7 +406,7 @@ export function ShopClient({
                   <button
                     type="button"
                     onClick={() => unlockPack(p.slug)}
-                    disabled={unlocked || loading || !user || balance < PACK_COST}
+                    disabled={unlocked || loading || !user || (!adminOn && balance < PACK_COST)}
                     className={
                       unlocked
                         ? "rounded-full border-2 border-emerald-700 bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-900"
@@ -411,7 +417,9 @@ export function ShopClient({
                       ? "Unlocked"
                       : loading
                         ? "Unlocking…"
-                        : `Unlock, ${PACK_COST} Riffs`}
+                        : adminOn
+                          ? "Unlock free (admin)"
+                          : `Unlock, ${PACK_COST} Riffs`}
                   </button>
                 </div>
               );

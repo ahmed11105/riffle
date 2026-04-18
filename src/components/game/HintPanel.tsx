@@ -9,6 +9,7 @@ import {
   type HintKind,
 } from "@/lib/riffs/hints";
 import { useRiffs } from "@/lib/riffs/useRiffs";
+import { useAdminMode } from "@/lib/admin";
 import type { RiffleTrack } from "@/lib/itunes";
 
 type RevealedHint = { kind: HintKind; value: string };
@@ -29,6 +30,7 @@ const HINT_ORDER: HintKind[] = ["genre", "year", "artist_letter"];
 
 export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: Props) {
   const { balance, spend, spending, ready } = useRiffs();
+  const [adminOn] = useAdminMode();
   const [error, setError] = useState<string | null>(null);
   const revealedKinds = new Set(revealed.map((h) => h.kind));
 
@@ -38,17 +40,20 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
       setError("This hint isn't available for this song.");
       return;
     }
-    const cost = HINT_COSTS[kind];
-    const result = await spend(cost, "hint", kind);
-    if (!result.ok) {
-      if (result.reason === "insufficient") {
-        setError(`Need ${cost} Riffs. Visit the shop to top up.`);
-      } else if (result.reason === "auth") {
-        setError("Sign in to use hints.");
-      } else {
-        setError(result.message ?? "Couldn't buy hint.");
+    // Admin bypass: skip the spend RPC entirely so hints are free.
+    if (!adminOn) {
+      const cost = HINT_COSTS[kind];
+      const result = await spend(cost, "hint", kind);
+      if (!result.ok) {
+        if (result.reason === "insufficient") {
+          setError(`Need ${cost} Riffs. Visit the shop to top up.`);
+        } else if (result.reason === "auth") {
+          setError("Sign in to use hints.");
+        } else {
+          setError(result.message ?? "Couldn't buy hint.");
+        }
+        return;
       }
-      return;
     }
     const hint: RevealedHint = { kind, value: describeHint(track, kind) };
     onReveal(hint);
@@ -58,9 +63,16 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
   return (
     <div className="flex w-full max-w-md flex-col gap-3 rounded-2xl border-4 border-stone-900 bg-stone-50 p-4 text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)]">
       <div className="flex items-baseline justify-between">
-        <h3 className="text-sm font-black uppercase tracking-wider">Hints</h3>
+        <h3 className="text-sm font-black uppercase tracking-wider">
+          Hints
+          {adminOn && (
+            <span className="ml-2 rounded bg-amber-400 px-1.5 py-0.5 text-[9px] text-stone-900">
+              ADMIN
+            </span>
+          )}
+        </h3>
         <span className="text-xs font-bold text-stone-500">
-          Balance: <span className="text-stone-900">{ready ? balance : "-"}</span> Riffs
+          Balance: <span className="text-stone-900">{adminOn ? "∞" : ready ? balance : "-"}</span> Riffs
         </span>
       </div>
 
@@ -82,7 +94,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
           const cost = HINT_COSTS[kind];
           const used = revealedKinds.has(kind);
           const available = isHintAvailable(track, kind);
-          const cantAfford = ready && balance < cost;
+          const cantAfford = !adminOn && ready && balance < cost;
           const isDisabled = !!disabled || used || !available || spending || cantAfford;
           return (
             <button
@@ -100,7 +112,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
             >
               <div>{HINT_LABELS[kind]}</div>
               <div className="text-[10px] uppercase tracking-wider opacity-70">
-                {used ? "Used" : `${cost} Riffs`}
+                {used ? "Used" : adminOn ? "Free" : `${cost} Riffs`}
               </div>
             </button>
           );

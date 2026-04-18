@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { loadLocalPlayer, saveLocalPlayer } from "@/lib/rooms";
+import { adminHeaders } from "@/lib/admin";
 
 export default function RoomsPage() {
   const router = useRouter();
@@ -29,7 +30,10 @@ export default function RoomsPage() {
     setCreating(true);
     saveLocalPlayer(name);
     try {
-      const res = await fetch("/api/rooms/create", { method: "POST" });
+      const res = await fetch("/api/rooms/create", {
+        method: "POST",
+        headers: adminHeaders(),
+      });
       const json = (await res.json()) as {
         code?: string;
         error?: string;
