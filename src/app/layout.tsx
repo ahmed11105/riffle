@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
 import { Onboarding } from "@/components/Onboarding";
+import { MobileNav } from "@/components/MobileNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,6 +73,7 @@ export default function RootLayout({
               <AdminKeyListener />
               <AdminFrame />
             </Suspense>
+            <MobileNav />
             {children}
             <Footer />
             <Suspense>

@@ -6,7 +6,7 @@ export function Logo({ className = "" }: { className?: string }) {
   const tap = useAdminTapGesture();
   return (
     <div
-      className={`inline-flex cursor-pointer items-center gap-2 font-black tracking-tight ${className}`}
+      className={`hidden cursor-pointer items-center gap-2 font-black tracking-tight sm:inline-flex ${className}`}
       aria-label="Riffle"
       onClick={tap}
     >
