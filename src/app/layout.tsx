@@ -73,7 +73,9 @@ export default function RootLayout({
               <AdminKeyListener />
               <AdminFrame />
             </Suspense>
-            <MobileNav />
+            <Suspense>
+              <MobileNav />
+            </Suspense>
             {children}
             <Footer />
             <Suspense>
