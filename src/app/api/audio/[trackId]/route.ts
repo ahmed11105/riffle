@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { itunesLookup } from "@/lib/itunes";
 
-// Proxy audio through our origin so it's not blocked by ORB and we can cache.
-// Accepts ?src=<previewUrl> with the iTunes preview URL (signed per-session),
-// or falls back to lookup by trackId.
+// Redirect to Apple's CDN for the preview m4a. We originally proxied to
+// dodge Opaque Response Blocking, but ORB is a fetch()-only concern, the
+// HTML <audio> element is safe to point at a cross-origin URL, and going
+// direct lets Apple's CDN serve proper HTTP Range (206) responses, which
+// iOS Safari requires before it will play back the clip at all.
+// Accepts ?src=<previewUrl>, or falls back to iTunes lookup by trackId.
 
 export async function GET(
   req: NextRequest,
@@ -20,15 +23,5 @@ export async function GET(
     url = track.previewUrl;
   }
 
-  const upstream = await fetch(url);
-  if (!upstream.ok || !upstream.body) {
-    return new NextResponse("upstream failed", { status: 502 });
-  }
-  return new NextResponse(upstream.body, {
-    headers: {
-      "Content-Type": "audio/mp4",
-      "Cache-Control": "public, max-age=86400, immutable",
-      "Access-Control-Allow-Origin": "*",
-    },
-  });
+  return NextResponse.redirect(url, 302);
 }

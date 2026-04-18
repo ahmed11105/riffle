@@ -11,9 +11,20 @@ type Props = {
   lockedLevel?: ClipLevel;
 };
 
+type Preset = "min" | "25" | "50" | "all";
+
 export function WagerPanel({ bank, onLockIn, locked, lockedAmount, lockedLevel }: Props) {
   const [amount, setAmount] = useState(Math.max(10, Math.floor(bank * 0.25)));
   const [level, setLevel] = useState<ClipLevel>(4);
+  // Tracks which preset button is "active" so we can highlight it. We reset
+  // this to null the moment the player drags the slider, so the highlight
+  // follows the most recent source of the stake value.
+  const [activePreset, setActivePreset] = useState<Preset | null>("25");
+
+  function pickPreset(preset: Preset, value: number) {
+    setAmount(value);
+    setActivePreset(preset);
+  }
 
   if (locked) {
     return (
@@ -65,14 +76,37 @@ export function WagerPanel({ bank, onLockIn, locked, lockedAmount, lockedLevel }
           max={maxAmount}
           step={5}
           value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          onChange={(e) => {
+            setAmount(Number(e.target.value));
+            setActivePreset(null);
+          }}
           className="w-full accent-amber-500"
         />
         <div className="mt-2 grid grid-cols-4 gap-2">
-          <button type="button" onClick={() => setAmount(10)} className="rounded-full border-2 border-stone-900 bg-stone-100 py-1 text-xs font-black">MIN</button>
-          <button type="button" onClick={() => setAmount(Math.max(10, Math.floor(bank / 4)))} className="rounded-full border-2 border-stone-900 bg-stone-100 py-1 text-xs font-black">25%</button>
-          <button type="button" onClick={() => setAmount(Math.max(10, Math.floor(bank / 2)))} className="rounded-full border-2 border-stone-900 bg-stone-100 py-1 text-xs font-black">50%</button>
-          <button type="button" onClick={() => setAmount(bank)} className="rounded-full border-2 border-stone-900 bg-rose-400 py-1 text-xs font-black">ALL IN</button>
+          {(
+            [
+              { key: "min", label: "MIN", value: 10, activeBg: "bg-amber-400", idleBg: "bg-stone-100" },
+              { key: "25", label: "25%", value: Math.max(10, Math.floor(bank / 4)), activeBg: "bg-amber-400", idleBg: "bg-stone-100" },
+              { key: "50", label: "50%", value: Math.max(10, Math.floor(bank / 2)), activeBg: "bg-amber-400", idleBg: "bg-stone-100" },
+              { key: "all", label: "ALL IN", value: bank, activeBg: "bg-rose-500 text-stone-50", idleBg: "bg-rose-400" },
+            ] as const
+          ).map((p) => {
+            const active = activePreset === p.key;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => pickPreset(p.key, p.value)}
+                className={
+                  active
+                    ? `rounded-full border-2 border-stone-900 ${p.activeBg} py-1 text-xs font-black shadow-[0_3px_0_0_rgba(0,0,0,0.9)]`
+                    : `rounded-full border-2 border-stone-900 ${p.idleBg} py-1 text-xs font-black`
+                }
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

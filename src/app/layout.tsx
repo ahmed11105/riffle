@@ -1,6 +1,14 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AdminKeyListener } from "@/components/AdminKeyListener";
+import { AdminFrame } from "@/components/AdminFrame";
+import { GlobalAudioBar } from "@/components/GlobalAudioBar";
+import { Footer } from "@/components/Footer";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
+import { Onboarding } from "@/components/Onboarding";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,14 +20,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://riffle.cc";
+
 export const metadata: Metadata = {
-  title: "Riffle — Heardle you can gamble on",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Riffle, Daily song-guessing game",
+    template: "%s · Riffle",
+  },
   description:
-    "A daily song guessing game with streaks, rooms, and wagers. Play on any device.",
+    "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers. Play free.",
+  applicationName: "Riffle",
+  keywords: ["song quiz", "music game", "daily game", "heardle", "guess the song"],
   openGraph: {
-    title: "Riffle",
-    description: "Heardle you can gamble on.",
+    title: "Riffle, Daily song-guessing game",
+    description:
+      "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers.",
     type: "website",
+    siteName: "Riffle",
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Riffle, Daily song-guessing game",
+    description:
+      "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers.",
   },
 };
 
@@ -40,7 +65,22 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>
+          <AnalyticsProvider>
+            <Suspense>
+              <AdminKeyListener />
+              <AdminFrame />
+            </Suspense>
+            {children}
+            <Footer />
+            <Suspense>
+              <GlobalAudioBar />
+            </Suspense>
+            <Onboarding />
+          </AnalyticsProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

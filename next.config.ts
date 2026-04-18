@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -18,4 +19,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry's webpack plugin uploads source maps and tunnels error-tracking
+// requests to dodge ad-blockers. It's a no-op locally without auth tokens.
+const sentryWebpackPluginOptions = {
+  silent: true,
+  org: "riffle",
+  project: "riffle-web",
+  tunnelRoute: "/monitoring",
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+export default process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
+  : nextConfig;

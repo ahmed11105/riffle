@@ -14,6 +14,7 @@ export async function POST(
     genres?: string[];
     artist_query?: string | null;
     rounds?: number;
+    allow_featured_tracks?: boolean;
   };
   const supabase = await createClient();
 
@@ -38,6 +39,19 @@ export async function POST(
 
   const { error: roomErr } = await supabase.from("rooms").update(patch).eq("code", code);
   if (roomErr) return NextResponse.json({ error: roomErr.message }, { status: 500 });
+
+  // Best-effort persist of the advanced toggle. If the migration that adds
+  // this column hasn't been applied yet we ignore the error so the rest of
+  // the restart still succeeds.
+  if (typeof body.allow_featured_tracks === "boolean") {
+    const { error: advErr } = await supabase
+      .from("rooms")
+      .update({ allow_featured_tracks: body.allow_featured_tracks })
+      .eq("code", code);
+    if (advErr && !/column.*allow_featured_tracks/i.test(advErr.message)) {
+      return NextResponse.json({ error: advErr.message }, { status: 500 });
+    }
+  }
 
   // Reset all player banks + correct_count.
   await supabase

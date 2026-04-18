@@ -1,13 +1,13 @@
-# Riffle — Daily Catalog Draft (v0)
+# Riffle, Daily Catalog Draft (v0)
 
 > Edit freely. Strike what you'd never play, star ⭐ your favorites, add what's
 > missing. When you hand this back I'll write the seed script that loads them
 > into the `tracks` table and uses a deterministic rotation to pick the Daily.
 
 **Difficulty legend**
-- 🔥 **Instant** — recognizable in the first 1–2 seconds (iconic intro, riff, drum fill)
-- 🎯 **Normal** — needs 2–4 seconds (a recognizable chord progression or hook)
-- 🧠 **Hard** — needs 8–16 seconds (for true fans — vocal hook, chorus, lyric)
+- 🔥 **Instant**, recognizable in the first 1–2 seconds (iconic intro, riff, drum fill)
+- 🎯 **Normal**, needs 2–4 seconds (a recognizable chord progression or hook)
+- 🧠 **Hard**, needs 8–16 seconds (for true fans, vocal hook, chorus, lyric)
 
 **Target mix for rotation:** ~40% 🔥, ~45% 🎯, ~15% 🧠.
 
@@ -92,7 +92,7 @@
 | 59 | Livin' la Vida Loca | Ricky Martin | 1999 | 🔥 | Drums + trumpet |
 | 60 | No Scrubs | TLC | 1999 | 🎯 | Guitar intro |
 | 61 | Mambo No. 5 | Lou Bega | 1999 | 🔥 | Horn sample |
-| 62 | …Baby One More Time (already listed) | — | — | — | — |
+| 62 | …Baby One More Time (already listed) |, |, |, |, |
 | 63 | Genie in a Bottle | Christina Aguilera | 1999 | 🎯 | Synth + vocal |
 
 ---
@@ -191,18 +191,18 @@
 
 1. **Country** is almost absent (only Old Town Road, Texas Hold 'Em, Sweet Home Alabama). If the audience includes US country fans, add: Garth Brooks "Friends in Low Places", Shania Twain "Man! I Feel Like a Woman!", Johnny Cash "Ring of Fire", Dolly Parton "Jolene", Luke Combs "Beautiful Crazy".
 2. **K-pop** only has Gangnam Style. If we care about younger/international audiences, add: BTS "Dynamite", BLACKPINK "DDU-DU DDU-DU", NewJeans "Super Shy", PSY could stay in the "meme pack" instead.
-3. **Latin** beyond Despacito: "Gasolina" — Daddy Yankee, "Bailando" — Enrique Iglesias, "Tusa" — Karol G, "MI GENTE" — J Balvin.
-4. **R&B evergreens**: "No Diggity" — Blackstreet, "End of the Road" — Boyz II Men, "Say My Name" — Destiny's Child. These should probably be in.
-5. **90s alt-rock depth**: I have 4 but could add "Basket Case" — Green Day, "Drive" — Incubus, "Glycerine" — Bush.
+3. **Latin** beyond Despacito: "Gasolina", Daddy Yankee, "Bailando", Enrique Iglesias, "Tusa", Karol G, "MI GENTE", J Balvin.
+4. **R&B evergreens**: "No Diggity", Blackstreet, "End of the Road", Boyz II Men, "Say My Name", Destiny's Child. These should probably be in.
+5. **90s alt-rock depth**: I have 4 but could add "Basket Case", Green Day, "Drive", Incubus, "Glycerine", Bush.
 6. **Taylor Swift**: currently 4 tracks. She's arguably the most guess-friendly artist alive. Is that too many or too few?
 7. **Repeat artists**: Queen (4), Michael Jackson (3), Adele (3), Ed Sheeran (3), Taylor (4). Fine or trim?
 
 ## Things I deliberately avoided
 
 - **Songs without iconic intros** even if they were huge (e.g. most Drake deep cuts, most album tracks). Riffle lives or dies on the 1-second test.
-- **Too-obscure critical darlings** (Bon Iver, Fleet Foxes, etc.) — fine for hard packs, not the main rotation.
-- **Christmas songs** — seasonal, should be a November/December event pack.
-- **Songs where iTunes might not have the actual recording** — a risk I'll check when I seed the catalog. If a track only exists as a karaoke version on iTunes it'll get blacklisted.
+- **Too-obscure critical darlings** (Bon Iver, Fleet Foxes, etc.), fine for hard packs, not the main rotation.
+- **Christmas songs**, seasonal, should be a November/December event pack.
+- **Songs where iTunes might not have the actual recording**, a risk I'll check when I seed the catalog. If a track only exists as a karaoke version on iTunes it'll get blacklisted.
 
 ## My asks
 

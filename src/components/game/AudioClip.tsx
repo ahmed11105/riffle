@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Play, Pause } from "lucide-react";
 import { useAudioStore } from "@/lib/store/audio";
 
@@ -10,13 +11,46 @@ type Props = {
   playing: boolean;
   onToggle: () => void;
   onEnded: () => void;
+  trackTitle?: string;
+  trackArtist?: string;
 };
 
-export function AudioClip({ src, maxSeconds, playing, onToggle, onEnded }: Props) {
-  const audioRef = useRef<HTMLAudioElement>(null);
+export function AudioClip({
+  src,
+  maxSeconds,
+  playing,
+  onToggle,
+  onEnded,
+  trackTitle,
+  trackArtist,
+}: Props) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopTimerRef = useRef<number | null>(null);
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
   const volume = useAudioStore((s) => s.volume);
   const muted = useAudioStore((s) => s.muted);
+  const registerAudio = useAudioStore((s) => s.registerAudio);
+  const pathname = usePathname();
+
+  // Create the Audio element once (via JS, not DOM) so it can survive
+  // if the component unmounts during client-side navigation.
+  useEffect(() => {
+    const a = new Audio();
+    a.preload = "auto";
+    audioRef.current = a;
+    return () => {
+      a.pause();
+      a.src = "";
+    };
+  }, []);
+
+  // Update src when it changes.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.src = src;
+  }, [src]);
 
   useEffect(() => {
     const a = audioRef.current;
@@ -29,12 +63,15 @@ export function AudioClip({ src, maxSeconds, playing, onToggle, onEnded }: Props
     const a = audioRef.current;
     if (!a) return;
     if (playing) {
-      a.currentTime = 0;
-      a.play().catch(() => onEnded());
+      try {
+        a.currentTime = 0;
+      } catch {}
+      a.play().catch(() => onEndedRef.current());
+      registerAudio(a, pathname, trackTitle, trackArtist);
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
       stopTimerRef.current = window.setTimeout(() => {
         a.pause();
-        onEnded();
+        onEndedRef.current();
       }, maxSeconds * 1000);
     } else {
       a.pause();
@@ -43,7 +80,7 @@ export function AudioClip({ src, maxSeconds, playing, onToggle, onEnded }: Props
     return () => {
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
     };
-  }, [playing, maxSeconds, onEnded]);
+  }, [playing, maxSeconds, src, registerAudio, pathname, trackTitle, trackArtist]);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -57,7 +94,6 @@ export function AudioClip({ src, maxSeconds, playing, onToggle, onEnded }: Props
           {playing ? <Pause className="h-10 w-10" /> : <Play className="ml-1 h-10 w-10" />}
         </div>
       </button>
-      <audio ref={audioRef} src={src} preload="auto" />
     </div>
   );
 }

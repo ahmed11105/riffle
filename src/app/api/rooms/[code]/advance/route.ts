@@ -35,7 +35,7 @@ export async function POST(
 
   // Idempotency: only advance if the caller's expected current status matches.
   // This makes it safe for multiple clients (or a fast double-click) to all
-  // fire /advance simultaneously when a timer expires — only the first one
+  // fire /advance simultaneously when a timer expires, only the first one
   // actually transitions; the rest no-op.
   if (body.from && body.from !== room.status) {
     return NextResponse.json({ status: room.status, skipped: true });
@@ -76,6 +76,7 @@ export async function POST(
       const track = await pickTrack({
         genres: room.genres ?? [],
         artistQuery: room.artist_query ?? null,
+        allowFeaturedTracks: room.allow_featured_tracks ?? false,
         exclude,
       });
       if (!track) {
@@ -150,7 +151,7 @@ export async function POST(
 
 // Settle a completed round: apply wager math to every player's bank.
 // Idempotent-ish: if the reveal row has `settled_at` we skip. (We don't have
-// that column yet, so we track by whether phase_started_at changed — close
+// that column yet, so we track by whether phase_started_at changed, close
 // enough for v1 with host-only triggering.)
 type SBClient = Awaited<ReturnType<typeof createClient>>;
 

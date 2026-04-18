@@ -1,4 +1,4 @@
-# Riffle — Project Notes
+# Riffle, Project Notes
 
 ## Project Overview
 
@@ -9,9 +9,9 @@ friends, every day."
 
 **Three modes on one engine:**
 
-1. **Daily** — one shared song globally, streak-driven, share-card viral loop
-2. **Solo Unlimited** — endless queue with genre filters, XP, levels
-3. **Rooms with Wagers** — the signature differentiator. Stake-per-round with a
+1. **Daily**, one shared song globally, streak-driven, share-card viral loop
+2. **Solo Unlimited**, endless queue with genre filters, XP, levels
+3. **Rooms with Wagers**, the signature differentiator. Stake-per-round with a
    length multiplier (1s = 5x, 2s = 3x, 4s = 2x, 8s = 1.5x, 16s = 1x), hot streak
    bonus, one-use insurance.
 
@@ -47,7 +47,7 @@ and adds the daily+streak+share card loop that competitors use to compound.
 - **React 19.2.4**
 - **TypeScript 5**
 - **Tailwind CSS 4**
-- **Supabase** — Auth, Postgres, Realtime (for rooms)
+- **Supabase**, Auth, Postgres, Realtime (for rooms)
 - **@supabase/ssr** for Next.js server/client clients
 - **Zustand** for client game state (installed, not yet used)
 - **Framer Motion** (installed, not yet used)
@@ -152,20 +152,20 @@ riffle-app/
 
 `.env.local` (not committed):
 
-- `NEXT_PUBLIC_SUPABASE_URL` — from Supabase dashboard → Settings → API
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — same
+- `NEXT_PUBLIC_SUPABASE_URL`, from Supabase dashboard → Settings → API
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`, same
 
 ## Design Decisions
 
 | Decision | Chosen | Why |
 |---|---|---|
-| Audio source | iTunes Search API | Free, clean catalog, stable CORS, 30s previews — and the only source that avoids the ORB bug and karaoke pollution of the original |
+| Audio source | iTunes Search API | Free, clean catalog, stable CORS, 30s previews, and the only source that avoids the ORB bug and karaoke pollution of the original |
 | Auth model | Anonymous + optional account (Supabase) | Lowest friction to play; retention hooks (streaks, leaderboard) unlock on signup |
 | Wager mode | Polished current wager (not Song Poker) | Ship-faster, and still the unique differentiator |
 | Scope | Full v1 (~3–4 weeks) | User explicitly wants monetizable product |
 | Bundler | Next 16 + Turbopack | Default in Next 16 |
 | Rendering | Cache Components (`cacheComponents: true`) | Matches Next 16 direction; static shell + `use cache` + client islands for the game loop |
-| Catalog filter | Regex blacklist on artist + track name | Removes "Rockhits", "Best Guitar Songs", karaoke, instrumental, tribute, cover compilations — the exact pollution that wrecked the original app |
+| Catalog filter | Regex blacklist on artist + track name | Removes "Rockhits", "Best Guitar Songs", karaoke, instrumental, tribute, cover compilations, the exact pollution that wrecked the original app |
 
 ## Status (as of 2026-04-14 evening)
 
@@ -173,14 +173,14 @@ riffle-app/
 - Next 16 scaffold + Turbopack + Cache Components enabled
 - Retro amber/cream palette + Riffle logo + Boomer mascot placeholder
 - Landing page with copy, CTAs, feature cards
-- **Daily mode** — end-to-end: deterministic daily seed, audio plays, guess
+- **Daily mode**, end-to-end: deterministic daily seed, audio plays, guess
   ladder advances, reveal card shows, replay works
-- **Solo mode** — batch-fetch from iTunes, play through endless queue
-- **Audio proxy works** — iTunes preview stream re-served with
+- **Solo mode**, batch-fetch from iTunes, play through endless queue
+- **Audio proxy works**, iTunes preview stream re-served with
   `Content-Type: audio/mp4` and CORS. Verified in Chromium via Playwright:
   `readyState: 4`, `duration: 30s`, no errors. Fixes the core bug from the
   original app.
-- **Clean catalog** — verified `/api/songs/random` returns Led Zeppelin,
+- **Clean catalog**, verified `/api/songs/random` returns Led Zeppelin,
   Eagles, Queen instead of "Rockhits" karaoke compilations.
 - `fuzzyMatchTitle` handles parentheticals, "feat.", accents, punctuation.
 - Supabase project `riffle` (ref `fdmabluqxpmhgempvtig`) created and linked;
@@ -188,7 +188,7 @@ riffle-app/
 - `next build` compiles clean, all routes build.
 
 ### ⏳ Built but not yet wired to the database
-- Daily results, streaks, coins, achievements — tables exist, no UI writes
+- Daily results, streaks, coins, achievements, tables exist, no UI writes
   to them yet. Daily page picks a deterministic song from iTunes on each
   request instead of persisting the daily puzzle.
 
@@ -209,7 +209,7 @@ riffle-app/
 1. Supabase anonymous auth + profile upsert on first visit.
 2. Persist daily results + streak updates.
 3. Share card component (emoji grid `🟨⬛🟩` + OG image).
-4. Room lobby + realtime wager loop (hardest piece — probably a whole session).
+4. Room lobby + realtime wager loop (hardest piece, probably a whole session).
 5. Deploy to Vercel, wire env vars.
 
 ## Known Issues
@@ -217,6 +217,6 @@ riffle-app/
 - The daily "puzzle" is currently deterministic-from-iTunes, not persisted in
   `daily_puzzles`. Two users playing at the same time may see the same song,
   but there's no per-day history or leaderboard yet.
-- `cacheLife` not tuned yet — default is fine for now.
+- `cacheLife` not tuned yet, default is fine for now.
 - No observability / logging in API routes (deferred until we have a Vercel
   deployment to wire it into).

@@ -27,20 +27,47 @@ export function useRoomRealtime(code: string): Returned {
   stateRef.current = state;
   const advancingRef = useRef(false);
 
-  // Server-clock auto-advance: any client (not just the host) checks every
-  // poll whether the current phase has expired and, if so, fires /advance.
-  // The server uses the `from` parameter to deduplicate so simultaneous
-  // fires no-op.
+  // Auto-advance the room when the current phase is "done". Two triggers:
+  //   1. The phase timer has expired (server-clock check).
+  //   2. Every player is already resolved for the phase, all wagers locked
+  //      in during wager phase, or every player done/any player correct in
+  //      guess phase. This keeps the game snappy instead of dead-waiting on
+  //      a 30s clock when everybody's already ready.
+  // Any client can fire /advance; the server's `from` check dedupes so only
+  // the first call actually transitions.
   const maybeAutoAdvance = useCallback(
-    async (room: RoomRow) => {
+    async (
+      room: RoomRow,
+      players: RoomPlayerRow[],
+      round: RoomRoundRow | null,
+    ) => {
       if (advancingRef.current) return;
       if (room.paused) return;
       if (room.status === "lobby" || room.status === "finished") return;
       if (!room.phase_started_at) return;
+
       const duration = PHASE_DURATIONS[room.status];
-      if (!duration) return;
       const started = new Date(room.phase_started_at).getTime();
-      if (started + duration * 1000 > Date.now()) return;
+      const timerDone = duration > 0 && started + duration * 1000 <= Date.now();
+
+      let stateDone = false;
+      // Need at least 2 players with a loaded round to consider state-
+      // based advancement. The >= 2 guard prevents [].every() → true
+      // from firing a false positive when the player list hasn't loaded.
+      if (players.length >= 2 && round) {
+        if (room.status === "wager") {
+          const wagers = round.wagers ?? {};
+          stateDone = players.every((p) => Boolean(wagers[p.display_name]));
+        } else if (room.status === "guess") {
+          const guesses = round.guesses ?? {};
+          const anyCorrect = players.some((p) => guesses[p.display_name]?.correct);
+          const allDone = players.every((p) => Boolean(guesses[p.display_name]?.done));
+          stateDone = anyCorrect || allDone;
+        }
+      }
+
+      if (!timerDone && !stateDone) return;
+
       advancingRef.current = true;
       try {
         await fetch(`/api/rooms/${code}/advance`, {
@@ -93,7 +120,11 @@ export function useRoomRealtime(code: string): Returned {
       };
     });
     if (room) {
-      maybeAutoAdvance(room as RoomRow);
+      maybeAutoAdvance(
+        room as RoomRow,
+        (players as RoomPlayerRow[] | null) ?? [],
+        round,
+      );
     }
   }, [supabase, code, maybeAutoAdvance]);
 
@@ -132,7 +163,11 @@ export function useRoomRealtime(code: string): Returned {
                 setState((s) => ({ ...s, round: (data as RoomRoundRow | null) ?? s.round }));
               });
           }
-          maybeAutoAdvance(nextRoom);
+          maybeAutoAdvance(
+            nextRoom,
+            stateRef.current.players,
+            stateRef.current.round,
+          );
         },
       )
       .on(
@@ -168,6 +203,13 @@ export function useRoomRealtime(code: string): Returned {
             if (s.room && n.round_num !== s.room.current_round) return s;
             return { ...s, round: n };
           });
+          if (stateRef.current.room) {
+            maybeAutoAdvance(
+              stateRef.current.room,
+              stateRef.current.players,
+              n,
+            );
+          }
         },
       )
       .subscribe();

@@ -41,30 +41,69 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// Returns the lead (first-credited) artist from an iTunes artistName
+// string, which can look like "Vaultboy", "eaJ featuring Mikel Stevens", or
+// "Vaultboy, eaJ & Some Kid". We strip everything after the first collab
+// separator so callers can compare identity on the primary performer only.
+function primaryArtist(artistName: string): string {
+  return artistName
+    .split(/\s*(?:,|&|\bfeat\.?\b|\bfeaturing\b|\bwith\b|\bvs\.?\b|\bx\b|\/)\s*/i)[0]
+    .trim();
+}
+
 export async function pickTrack(opts: {
   genres?: string[];
   artistQuery?: string | null;
   exclude?: string[];
+  // When false (default), tracks where the requested artist only appears as
+  // a featured performer are rejected. Flip this on via the lobby's
+  // "Advanced settings" to include feature-only appearances.
+  allowFeaturedTracks?: boolean;
 }): Promise<RiffleTrack | null> {
-  const { genres = [], artistQuery, exclude = [] } = opts;
+  const {
+    genres = [],
+    artistQuery,
+    exclude = [],
+    allowFeaturedTracks = false,
+  } = opts;
 
-  // Build candidate seed list: artist query (if present) first, then genres,
-  // else mix.
-  const seeds: string[] = [];
-  if (artistQuery && artistQuery.trim()) {
-    seeds.push(artistQuery.trim());
+  // Build candidate seed list. `artistQuery` may be a comma-separated list
+  // (the host can add multiple artists in the lobby), each artist becomes
+  // its own seed so a round can come from any of them at random.
+  const artistSeeds = (artistQuery ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const seeds: { term: string; artist: string | null }[] = [];
+  if (artistSeeds.length) {
+    for (const a of artistSeeds) seeds.push({ term: a, artist: a });
   }
   if (genres.length) {
-    for (const g of genres) seeds.push(...(CATEGORY_SEEDS[g] ?? []));
-  } else if (!artistQuery) {
-    seeds.push(...MIX_SEEDS);
+    for (const g of genres) {
+      for (const s of CATEGORY_SEEDS[g] ?? []) seeds.push({ term: s, artist: null });
+    }
+  } else if (artistSeeds.length === 0) {
+    for (const s of MIX_SEEDS) seeds.push({ term: s, artist: null });
   }
 
-  const unique = [...new Set(seeds)];
+  const seen = new Set<string>();
+  const unique = seeds.filter((s) => {
+    const k = `${s.artist ?? ""}::${s.term}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   const picks = shuffle(unique).slice(0, 3);
   for (const seed of picks) {
-    const results = await itunesSearch(seed, 25).catch(() => []);
-    const filtered = results.filter((t) => !exclude.includes(t.id));
+    const results = await itunesSearch(seed.term, 25).catch(() => []);
+    let filtered = results.filter((t) => !exclude.includes(t.id));
+    if (seed.artist && !allowFeaturedTracks) {
+      const target = seed.artist.toLowerCase();
+      filtered = filtered.filter(
+        (t) => primaryArtist(t.artist).toLowerCase() === target,
+      );
+    }
     if (filtered.length) {
       return filtered[Math.floor(Math.random() * filtered.length)];
     }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
+import { HomeStats } from "@/components/HomeStats";
 
 export default function Home() {
   return (
@@ -11,6 +12,8 @@ export default function Home() {
           <Link href="/daily" className="hover:text-amber-300">Daily</Link>
           <Link href="/solo" className="hover:text-amber-300">Solo</Link>
           <Link href="/rooms" className="hover:text-amber-300">Rooms</Link>
+          <Link href="/leaderboard" className="hover:text-amber-300">Leaderboard</Link>
+          <Link href="/shop" className="hover:text-amber-300">Shop</Link>
         </nav>
       </header>
 
@@ -18,11 +21,12 @@ export default function Home() {
         <Mascot size={140} className="mb-4 drop-shadow-[0_8px_0_rgba(0,0,0,0.9)]" />
         <h1 className="text-6xl font-black leading-none tracking-tighter text-amber-100 sm:text-7xl">
           Name the tune.<br />
-          <span className="text-amber-400">Stake your claim.</span>
+          <span className="text-amber-400">Trust your ear.</span>
         </h1>
         <p className="mt-5 max-w-md text-lg text-amber-100/70">
-          Riffle is a daily song-guessing game you can play solo, share with friends, or
-          wager on in live rooms. One second of a song is all you need. Probably.
+          Riffle is a daily song-guessing game you can play solo, share with
+          friends, or play live in rooms with a points-based wager mechanic.
+          One second of a song is all you need. Probably.
         </p>
 
         <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
@@ -40,11 +44,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="mt-8 flex gap-6 text-sm text-amber-100/60">
-          <div><span className="font-black text-amber-300">🔥 0</span> day streak</div>
-          <div><span className="font-black text-amber-300">100</span> coins</div>
-          <div><span className="font-black text-amber-300">Lv 1</span></div>
-        </div>
+        <HomeStats />
       </section>
 
     </main>

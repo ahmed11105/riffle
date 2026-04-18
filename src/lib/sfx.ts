@@ -45,14 +45,14 @@ function playSequence(steps: Step[]) {
   }
 }
 
-// Skip — a quick neutral blip.
+// Skip, a quick neutral blip.
 export function sfxSkip() {
   playSequence([
     { freq: 520, time: 0, dur: 0.08, type: "triangle" },
   ]);
 }
 
-// Wrong — a low descending buzz.
+// Wrong, a low descending buzz.
 export function sfxWrong() {
   playSequence([
     { freq: 220, time: 0, dur: 0.14, type: "sawtooth", gain: 0.6 },
@@ -60,7 +60,7 @@ export function sfxWrong() {
   ]);
 }
 
-// Correct — a bright rising arpeggio (C–E–G–C').
+// Correct, a bright rising arpeggio (C–E–G–C').
 export function sfxCorrect() {
   playSequence([
     { freq: 523.25, time: 0, dur: 0.12, type: "triangle" },

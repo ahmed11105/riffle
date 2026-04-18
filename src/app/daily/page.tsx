@@ -1,33 +1,65 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { DailyGame } from "./DailyGame";
 import { Logo } from "@/components/branding/Logo";
+import { createClient } from "@/lib/supabase/server";
+import type { RiffleTrack } from "@/lib/itunes";
+import { dayKeyFor, pickTrackForDay, toRiffleTrack } from "@/lib/daily/pick";
+import { obfuscateTitle } from "@/lib/obfuscate";
 
-async function fetchTodayTrack() {
-  "use cache";
-  const { itunesSearch } = await import("@/lib/itunes");
-  // Seed by date so everyone gets the same "daily" song (MVP — no DB yet).
-  const seeds = [
-    "top hits 2024",
-    "billboard hot 100",
-    "pop hits",
-    "rock anthems",
-    "2010s hits",
-    "2000s hits",
-    "90s hits",
-    "rap hits",
-  ];
+async function TodayTrack() {
+  await connection();
   const today = new Date();
-  const dayKey = `${today.getUTCFullYear()}-${today.getUTCMonth()}-${today.getUTCDate()}`;
-  let hash = 0;
-  for (const ch of dayKey) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
-  const seed = seeds[Math.abs(hash) % seeds.length];
-  const tracks = await itunesSearch(seed, 50);
-  const pick = tracks[Math.abs(hash) % Math.max(1, tracks.length)];
-  return pick ?? null;
+  const key = dayKeyFor(today);
+
+  // Check for a server-side override first (admin-curated daily).
+  const supabase = await createClient();
+  const { data: override } = await supabase
+    .from("daily_overrides")
+    .select("*")
+    .eq("day_key", key)
+    .maybeSingle();
+
+  if (override?.preview_url) {
+    const track: RiffleTrack = {
+      id: override.track_id,
+      source: "itunes",
+      title: obfuscateTitle(override.title),
+      artist: override.artist,
+      album: override.album ?? "",
+      albumArtUrl: override.album_art_url ?? "",
+      previewUrl: override.preview_url,
+      durationMs: override.duration_ms ?? 0,
+      releaseYear: override.release_year ?? undefined,
+    };
+    return <DailyGame track={track} />;
+  }
+
+  // Fallback: hash-pick from the static NOW pool.
+  const pick = pickTrackForDay(key);
+  if (!pick) {
+    return (
+      <p className="text-amber-100/70">
+        Couldn&rsquo;t load today&rsquo;s song. Try again soon.
+      </p>
+    );
+  }
+  const riffleTrack = toRiffleTrack(pick);
+  riffleTrack.title = obfuscateTitle(riffleTrack.title);
+  return <DailyGame track={riffleTrack} />;
 }
 
-export default async function DailyPage() {
-  const track = await fetchTodayTrack();
+function DailyGameSkeleton() {
+  return (
+    <div className="flex min-h-[240px] w-full max-w-md flex-col items-center justify-center gap-3 text-amber-100/70">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />
+      <p className="text-sm">Loading today&rsquo;s song…</p>
+    </div>
+  );
+}
+
+export default function DailyPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-8">
       <header className="flex w-full max-w-md items-center justify-between gap-3">
@@ -38,11 +70,9 @@ export default async function DailyPage() {
       </header>
       <h1 className="mt-6 text-3xl font-black text-amber-100">Today&rsquo;s Riffle</h1>
       <p className="mb-6 text-sm text-amber-100/60">A fresh song every day</p>
-      {track ? (
-        <DailyGame track={track} />
-      ) : (
-        <p className="text-amber-100/70">Couldn&rsquo;t load today&rsquo;s song. Try again soon.</p>
-      )}
+      <Suspense fallback={<DailyGameSkeleton />}>
+        <TodayTrack />
+      </Suspense>
     </main>
   );
 }

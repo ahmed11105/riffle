@@ -30,8 +30,16 @@ export default function RoomsPage() {
     saveLocalPlayer(name);
     try {
       const res = await fetch("/api/rooms/create", { method: "POST" });
-      const json = (await res.json()) as { code?: string; error?: string };
-      if (!res.ok || !json.code) throw new Error(json.error ?? "create failed");
+      const json = (await res.json()) as {
+        code?: string;
+        error?: string;
+        message?: string;
+      };
+      if (res.status === 402 && json.error === "rooms_capped") {
+        router.push("/shop?upsell=rooms_capped#pro");
+        return;
+      }
+      if (!res.ok || !json.code) throw new Error(json.message ?? json.error ?? "create failed");
       router.push(`/rooms/${json.code}?host=1`);
     } catch (e) {
       setError(String(e));

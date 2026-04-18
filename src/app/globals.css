@@ -44,7 +44,7 @@ body {
 }
 .animate-pulse-ring { animation: pulse-ring 1.8s ease-out infinite; }
 
-/* Slim volume slider — standard horizontal range, rotated via parent.
+/* Slim volume slider, standard horizontal range, rotated via parent.
    The element box is 32px tall so the rotated hit target is 32px wide,
    while the visible track stays a thin 4px line. */
 .riffle-vol-slider {
