@@ -42,8 +42,11 @@ export function GlobalAudioBar() {
             </div>
           )}
           {!globalTrackTitle && (
-            <div className="text-xs font-bold text-amber-100/60">
-              Audio playing…
+            <div className="text-sm font-black text-amber-100/80">
+              Mystery track
+              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-100/50">
+                Not revealed yet
+              </span>
             </div>
           )}
         </div>

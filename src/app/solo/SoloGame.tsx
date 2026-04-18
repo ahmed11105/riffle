@@ -222,8 +222,6 @@ export function SoloGame() {
             playing={playing}
             onToggle={() => setPlaying((p) => !p)}
             onEnded={() => setPlaying(false)}
-            trackTitle={current.title}
-            trackArtist={current.artist}
           />
           <p className="text-xs text-amber-100/60">
             Playing the first {LEVELS[levelIdx]} second
