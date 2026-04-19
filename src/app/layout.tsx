@@ -54,6 +54,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  // viewport-fit=cover lets the body extend into the notch/home-indicator
+  // area. Combined with safe-area-inset padding in globals.css, this
+  // keeps the dark background edge-to-edge on iPhones.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

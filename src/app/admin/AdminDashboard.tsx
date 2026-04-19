@@ -874,7 +874,8 @@ function TrackList({
     );
     a.addEventListener("ended", () => setPlayingId(null));
     a.play().catch(() => {});
-    registerAudio(a, "/admin", t.title, t.artist);
+    // undefined maxSeconds = admin preview plays the full clip (no cap).
+    registerAudio(a, "/admin", undefined, t.title, t.artist);
     audioRef.current = a;
     setPlayingId(t.id);
   }
@@ -1047,7 +1048,7 @@ function WikiTrackList({
     );
     a.addEventListener("ended", () => setPlayingIdx(null));
     a.play().catch(() => {});
-    registerAudio(a, "/admin", resolved.title, resolved.artist);
+    registerAudio(a, "/admin", undefined, resolved.title, resolved.artist);
     audioRef.current = a;
     setPlayingIdx(idx);
   }
