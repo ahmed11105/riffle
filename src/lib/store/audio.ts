@@ -40,17 +40,17 @@ type AudioState = {
 const STORAGE_KEY = "riffle:volume";
 
 function readInitial(): { volume: number; muted: boolean } {
-  if (typeof window === "undefined") return { volume: 0.7, muted: false };
+  if (typeof window === "undefined") return { volume: 0.5, muted: false };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { volume: 0.7, muted: false };
+    if (!raw) return { volume: 0.5, muted: false };
     const parsed = JSON.parse(raw) as { volume?: number; muted?: boolean };
     return {
-      volume: typeof parsed.volume === "number" ? Math.max(0, Math.min(1, parsed.volume)) : 0.7,
+      volume: typeof parsed.volume === "number" ? Math.max(0, Math.min(1, parsed.volume)) : 0.5,
       muted: Boolean(parsed.muted),
     };
   } catch {
-    return { volume: 0.7, muted: false };
+    return { volume: 0.5, muted: false };
   }
 }
 

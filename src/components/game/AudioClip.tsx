@@ -35,14 +35,17 @@ export function AudioClip({
   const pathname = usePathname();
 
   // Create the Audio element once (via JS, not DOM) so it can survive
-  // if the component unmounts during client-side navigation.
+  // if the component unmounts during client-side navigation. The
+  // element is intentionally NOT nuked in cleanup: it stays registered
+  // in the global audio store so the floating playback bar can keep
+  // playing the current clip after the user leaves this page. Just
+  // pause so it doesn't keep playing during the route transition.
   useEffect(() => {
     const a = new Audio();
     a.preload = "auto";
     audioRef.current = a;
     return () => {
       a.pause();
-      a.src = "";
     };
   }, []);
 
