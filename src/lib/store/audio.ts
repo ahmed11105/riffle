@@ -17,12 +17,19 @@ type AudioState = {
   globalTrackTitle: string | null;
   globalTrackArtist: string | null;
   globalPlaying: boolean;
+  // Clip length the bar should respect. Matches the current level's
+  // maxSeconds on the page that registered the audio so bar playback
+  // stops at the same boundary (1s / 2s / 4s / 8s / 16s) instead of
+  // leaking the full 30s preview.
+  globalMaxSeconds: number | null;
   registerAudio: (
     el: HTMLAudioElement,
     originPath: string,
+    maxSeconds?: number,
     title?: string,
     artist?: string,
   ) => void;
+  updateMaxSeconds: (maxSeconds: number | null) => void;
   unregisterAudio: () => void;
   globalPlay: () => void;
   globalPause: () => void;
@@ -58,6 +65,16 @@ function persist(state: { volume: number; muted: boolean }) {
 
 const initial = readInitial();
 
+// Shared stop-timer for bar-initiated playback. Lives outside the store
+// so zustand doesn't treat it as reactive state.
+let globalStopTimerId: number | null = null;
+function clearGlobalStopTimer() {
+  if (globalStopTimerId !== null) {
+    window.clearTimeout(globalStopTimerId);
+    globalStopTimerId = null;
+  }
+}
+
 export const useAudioStore = create<AudioState>((set, get) => ({
   volume: initial.volume,
   muted: initial.muted,
@@ -90,16 +107,22 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   globalTrackTitle: null,
   globalTrackArtist: null,
   globalPlaying: false,
-  registerAudio: (el, originPath, title, artist) => {
+  globalMaxSeconds: null,
+  registerAudio: (el, originPath, maxSeconds, title, artist) => {
     // Stop any previously registered audio.
     const prev = get().globalAudio;
     if (prev && prev !== el) {
       prev.pause();
     }
+    clearGlobalStopTimer();
     el.volume = get().muted ? 0 : get().volume;
     el.muted = get().muted;
-    const onEnded = () => set({ globalPlaying: false });
-    const onPause = () => set({ globalPlaying: el.currentTime > 0 && !el.paused ? true : false });
+    const onEnded = () => {
+      clearGlobalStopTimer();
+      set({ globalPlaying: false });
+    };
+    const onPause = () =>
+      set({ globalPlaying: el.currentTime > 0 && !el.paused ? true : false });
     const onPlay = () => set({ globalPlaying: true });
     el.addEventListener("ended", onEnded);
     el.addEventListener("pause", onPause);
@@ -109,36 +132,67 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       globalOriginPath: originPath,
       globalTrackTitle: title ?? null,
       globalTrackArtist: artist ?? null,
+      globalMaxSeconds: maxSeconds ?? null,
       globalPlaying: !el.paused,
     });
+  },
+  updateMaxSeconds: (maxSeconds) => {
+    set({ globalMaxSeconds: maxSeconds });
   },
   unregisterAudio: () => {
     const el = get().globalAudio;
     if (el) el.pause();
+    clearGlobalStopTimer();
     set({
       globalAudio: null,
       globalOriginPath: null,
       globalTrackTitle: null,
       globalTrackArtist: null,
+      globalMaxSeconds: null,
       globalPlaying: false,
     });
   },
   globalPlay: () => {
     const el = get().globalAudio;
-    if (el) el.play().catch(() => {});
+    if (!el) return;
+    clearGlobalStopTimer();
+    try {
+      el.currentTime = 0;
+    } catch {}
+    el.play().catch(() => {});
+    // Respect the clip-length cap so bar playback matches the game level
+    // that registered the audio (1s, 2s, 4s, etc). Falls back to "play
+    // the whole clip" if no cap was set.
+    const max = get().globalMaxSeconds;
+    if (max && max > 0) {
+      globalStopTimerId = window.setTimeout(() => {
+        const current = get().globalAudio;
+        if (current) current.pause();
+        globalStopTimerId = null;
+      }, max * 1000);
+    }
   },
   globalPause: () => {
     const el = get().globalAudio;
     if (el) el.pause();
+    clearGlobalStopTimer();
   },
   globalStop: () => {
     get().unregisterAudio();
   },
   globalRewind: () => {
     const el = get().globalAudio;
-    if (el) {
-      el.currentTime = 0;
-      el.play().catch(() => {});
+    if (!el) return;
+    clearGlobalStopTimer();
+    el.currentTime = 0;
+    el.play().catch(() => {});
+    const max = get().globalMaxSeconds;
+    if (max && max > 0) {
+      globalStopTimerId = window.setTimeout(() => {
+        const current = get().globalAudio;
+        if (current) current.pause();
+        globalStopTimerId = null;
+      }, max * 1000);
     }
   },
 }));

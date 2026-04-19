@@ -31,6 +31,7 @@ export function AudioClip({
   const volume = useAudioStore((s) => s.volume);
   const muted = useAudioStore((s) => s.muted);
   const registerAudio = useAudioStore((s) => s.registerAudio);
+  const updateMaxSeconds = useAudioStore((s) => s.updateMaxSeconds);
   const pathname = usePathname();
 
   // Create the Audio element once (via JS, not DOM) so it can survive
@@ -59,6 +60,13 @@ export function AudioClip({
     a.muted = muted;
   }, [volume, muted]);
 
+  // Keep the store's clip-length cap in sync with the current level so
+  // the global bar plays the same snippet the game is on, even if the
+  // user hasn't hit Play since advancing levels.
+  useEffect(() => {
+    updateMaxSeconds(maxSeconds);
+  }, [maxSeconds, updateMaxSeconds]);
+
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -67,7 +75,7 @@ export function AudioClip({
         a.currentTime = 0;
       } catch {}
       a.play().catch(() => onEndedRef.current());
-      registerAudio(a, pathname, trackTitle, trackArtist);
+      registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist);
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
       stopTimerRef.current = window.setTimeout(() => {
         a.pause();
