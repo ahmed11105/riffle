@@ -41,6 +41,17 @@ export function Onboarding() {
         track(EVENTS.ONBOARDING_STARTED);
       }
     } catch {}
+
+    // Anywhere in the app can replay the onboarding by dispatching
+    // window.dispatchEvent(new CustomEvent("riffle:show-onboarding")).
+    // Used by the "How to play" link on the home page.
+    function onShow() {
+      setStep(0);
+      setOpen(true);
+      track(EVENTS.ONBOARDING_STARTED, { replay: true });
+    }
+    window.addEventListener("riffle:show-onboarding", onShow);
+    return () => window.removeEventListener("riffle:show-onboarding", onShow);
   }, [track]);
 
   function close(reason: "completed" | "dismissed") {

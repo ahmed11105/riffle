@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { HomeStats } from "@/components/HomeStats";
+import { HomeHelpLinks } from "@/components/HomeHelpLinks";
 
 export default function Home() {
   return (
@@ -33,14 +34,6 @@ export default function Home() {
           Name the tune.<br />
           <span className="text-amber-400">Trust your ear.</span>
         </h1>
-        {/* Hide the long description on phones to keep the CTAs above the
-            fold. Desktop keeps the pitch. */}
-        <p className="mt-5 hidden max-w-md text-lg text-amber-100/70 sm:block">
-          Riffle is a daily song-guessing game you can play solo, share with
-          friends, or play live in rooms with a points-based wager mechanic.
-          One second of a song is all you need. Probably.
-        </p>
-
         <div className="mt-5 flex w-full flex-col gap-3 sm:mt-8 sm:flex-row sm:justify-center">
           <Link
             href="/daily"
@@ -57,6 +50,7 @@ export default function Home() {
         </div>
 
         <HomeStats />
+        <HomeHelpLinks />
       </section>
 
     </main>
