@@ -5,7 +5,6 @@ import {
   HINT_COSTS,
   HINT_LABELS,
   describeHint,
-  isHintAvailable,
   type HintKind,
 } from "@/lib/riffs/hints";
 import { useRiffs } from "@/lib/riffs/useRiffs";
@@ -28,36 +27,80 @@ type Props = {
 
 const HINT_ORDER: HintKind[] = ["genre", "year", "artist_letter"];
 
+// Solo / Rooms tracks come from now-pool.json which doesn't carry genre
+// or release year inline. When the player buys one of those hints we
+// fetch on demand from the iTunes lookup route. Returns null if the
+// lookup fails or the field is still missing.
+async function lookupMissingField(
+  trackId: string,
+  kind: HintKind,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/itunes/lookup?trackId=${encodeURIComponent(trackId)}`);
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      genre?: string | null;
+      releaseYear?: number | null;
+      artist?: string | null;
+    };
+    if (kind === "genre") return json.genre ?? null;
+    if (kind === "year") return json.releaseYear ? String(json.releaseYear) : null;
+    if (kind === "artist_letter") return json.artist?.[0]?.toUpperCase() ?? null;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+// Prefer local track data, fall back to iTunes lookup so the user always
+// gets a real answer for their Riffs instead of "Unknown".
+async function resolveHintValue(
+  track: RiffleTrack,
+  kind: HintKind,
+): Promise<string> {
+  const local = describeHint(track, kind);
+  const isPlaceholder =
+    local === "Unknown genre" ||
+    local === "Unknown year" ||
+    local === "?";
+  if (!isPlaceholder) return local;
+  const fetched = await lookupMissingField(track.id, kind);
+  return fetched ?? local;
+}
+
 export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: Props) {
   const { balance, spend, spending, ready } = useRiffs();
   const [adminOn] = useAdminMode();
   const [error, setError] = useState<string | null>(null);
+  const [buying, setBuying] = useState<HintKind | null>(null);
   const revealedKinds = new Set(revealed.map((h) => h.kind));
 
   async function buyHint(kind: HintKind) {
     setError(null);
-    if (!isHintAvailable(track, kind)) {
-      setError("This hint isn't available for this song.");
-      return;
-    }
-    // Admin bypass: skip the spend RPC entirely so hints are free.
-    if (!adminOn) {
-      const cost = HINT_COSTS[kind];
-      const result = await spend(cost, "hint", kind);
-      if (!result.ok) {
-        if (result.reason === "insufficient") {
-          setError(`Need ${cost} Riffs. Visit the shop to top up.`);
-        } else if (result.reason === "auth") {
-          setError("Sign in to use hints.");
-        } else {
-          setError(result.message ?? "Couldn't buy hint.");
+    setBuying(kind);
+    try {
+      // Admin bypass: skip the spend RPC entirely so hints are free.
+      if (!adminOn) {
+        const cost = HINT_COSTS[kind];
+        const result = await spend(cost, "hint", kind);
+        if (!result.ok) {
+          if (result.reason === "insufficient") {
+            setError(`Need ${cost} Riffs. Visit the shop to top up.`);
+          } else if (result.reason === "auth") {
+            setError("Sign in to use hints.");
+          } else {
+            setError(result.message ?? "Couldn't buy hint.");
+          }
+          return;
         }
-        return;
       }
+      const value = await resolveHintValue(track, kind);
+      const hint: RevealedHint = { kind, value };
+      onReveal(hint);
+      onBroadcast?.(hint);
+    } finally {
+      setBuying(null);
     }
-    const hint: RevealedHint = { kind, value: describeHint(track, kind) };
-    onReveal(hint);
-    onBroadcast?.(hint);
   }
 
   return (
@@ -93,9 +136,10 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
         {HINT_ORDER.map((kind) => {
           const cost = HINT_COSTS[kind];
           const used = revealedKinds.has(kind);
-          const available = isHintAvailable(track, kind);
           const cantAfford = !adminOn && ready && balance < cost;
-          const isDisabled = !!disabled || used || !available || spending || cantAfford;
+          const isBuyingThis = buying === kind;
+          const isDisabled =
+            !!disabled || used || spending || cantAfford || isBuyingThis;
           return (
             <button
               key={kind}
@@ -112,7 +156,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
             >
               <div>{HINT_LABELS[kind]}</div>
               <div className="text-[10px] uppercase tracking-wider opacity-70">
-                {used ? "Used" : adminOn ? "Free" : `${cost} Riffs`}
+                {used ? "Used" : isBuyingThis ? "…" : adminOn ? "Free" : `${cost} Riffs`}
               </div>
             </button>
           );
