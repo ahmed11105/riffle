@@ -120,13 +120,13 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
       </div>
 
       {revealed.length > 0 && (
-        <ul className="flex flex-col gap-1 rounded-xl bg-amber-100/60 p-2 text-sm">
+        <ul className="flex flex-col gap-1 rounded-xl border-2 border-stone-900 bg-stone-900 p-3 text-sm text-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
           {revealed.map((h) => (
-            <li key={h.kind} className="flex items-baseline justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-600">
+            <li key={h.kind} className="flex items-baseline justify-between gap-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
                 {HINT_LABELS[h.kind]}
               </span>
-              <span className="font-black">{h.value}</span>
+              <span className="font-black text-amber-300">{h.value}</span>
             </li>
           ))}
         </ul>
