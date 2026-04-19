@@ -6,13 +6,13 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 
-const PRIMARY = [
+const PRIMARY: { href: string; label: string; emphasis?: boolean }[] = [
   { href: "/", label: "Home" },
   { href: "/daily", label: "Daily" },
   { href: "/solo", label: "Solo" },
   { href: "/rooms", label: "Friends Rooms" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/shop", label: "Shop" },
+  { href: "/shop", label: "Shop", emphasis: true },
 ];
 
 const SECONDARY = [
@@ -99,16 +99,14 @@ export function MobileNav() {
           {PRIMARY.map((item) => {
             const active =
               item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const base = "rounded-xl border-2 px-4 py-3 text-base font-black uppercase tracking-wider";
+            const cls = active
+              ? `${base} border-stone-900 bg-amber-400 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]`
+              : item.emphasis
+                ? `${base} border-stone-900 bg-amber-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] hover:bg-amber-300`
+                : `${base} border-transparent hover:bg-stone-100`;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  active
-                    ? "rounded-xl border-2 border-stone-900 bg-amber-400 px-4 py-3 text-base font-black uppercase tracking-wider shadow-[0_3px_0_0_rgba(0,0,0,0.9)]"
-                    : "rounded-xl border-2 border-transparent px-4 py-3 text-base font-black uppercase tracking-wider hover:bg-stone-100"
-                }
-              >
+              <Link key={item.href} href={item.href} className={cls}>
                 {item.label}
               </Link>
             );
