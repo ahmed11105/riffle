@@ -25,12 +25,12 @@ type Props = {
   disabled?: boolean;
 };
 
-const HINT_ORDER: HintKind[] = ["genre", "year", "artist_letter"];
+const HINT_ORDER: HintKind[] = ["year", "artist_letter", "artist"];
 
-// Solo / Rooms tracks come from now-pool.json which doesn't carry genre
-// or release year inline. When the player buys one of those hints we
-// fetch on demand from the iTunes lookup route. Returns null if the
-// lookup fails or the field is still missing.
+// Solo / Rooms tracks come from now-pool.json which doesn't carry
+// release year inline. When the player buys a year hint we fall back
+// to the iTunes lookup route. Artist name is always on the pool track
+// so "artist" and "artist_letter" resolve locally.
 async function lookupMissingField(
   trackId: string,
   kind: HintKind,
@@ -39,29 +39,28 @@ async function lookupMissingField(
     const res = await fetch(`/api/itunes/lookup?trackId=${encodeURIComponent(trackId)}`);
     if (!res.ok) return null;
     const json = (await res.json()) as {
-      genre?: string | null;
       releaseYear?: number | null;
       artist?: string | null;
     };
-    if (kind === "genre") return json.genre ?? null;
     if (kind === "year") return json.releaseYear ? String(json.releaseYear) : null;
     if (kind === "artist_letter") return json.artist?.[0]?.toUpperCase() ?? null;
+    if (kind === "artist") return json.artist ?? null;
   } catch {
     return null;
   }
   return null;
 }
 
-// Prefer local track data, fall back to iTunes lookup so the user always
-// gets a real answer for their Riffs instead of "Unknown".
+// Prefer local track data, fall back to iTunes lookup so the user
+// always gets a real answer for their Riffs instead of "Unknown".
 async function resolveHintValue(
   track: RiffleTrack,
   kind: HintKind,
 ): Promise<string> {
   const local = describeHint(track, kind);
   const isPlaceholder =
-    local === "Unknown genre" ||
     local === "Unknown year" ||
+    local === "Unknown artist" ||
     local === "?";
   if (!isPlaceholder) return local;
   const fetched = await lookupMissingField(track.id, kind);
