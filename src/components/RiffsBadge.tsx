@@ -9,13 +9,15 @@ export function RiffsBadge({ showShopLink = true }: { showShopLink?: boolean }) 
   const { balance, ready } = useRiffs();
   const [adminOn] = useAdminMode();
 
-  const display = adminOn ? "∞" : ready ? balance : "-";
+  // Pre-auth/first-load should read "0" not "-" so new players don't
+  // see a dead-looking dash where a number belongs.
+  const display = adminOn ? "∞" : ready ? balance : 0;
 
   return (
     <Link
       href={showShopLink ? "/shop" : "#"}
       aria-label={`${adminOn ? "Unlimited" : balance} Riffs. Open shop.`}
-      className="inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-amber-400 px-3 py-1 text-sm font-black text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+      className="inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 text-sm font-black text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] transition hover:bg-stone-100 active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
     >
       <Image
         src="/riff-icon.png"
@@ -26,8 +28,8 @@ export function RiffsBadge({ showShopLink = true }: { showShopLink?: boolean }) 
         priority
       />
       <span>{display}</span>
-      <span className="text-[10px] uppercase tracking-wider">Riffs</span>
-      {showShopLink && !adminOn && <span aria-hidden>+</span>}
+      <span className="text-[10px] uppercase tracking-wider text-stone-500">Riffs</span>
+      {showShopLink && !adminOn && <span aria-hidden className="text-amber-600">+</span>}
     </Link>
   );
 }
