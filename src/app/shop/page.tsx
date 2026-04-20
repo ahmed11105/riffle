@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/branding/Logo";
+import { MainNav } from "@/components/MainNav";
 import { ShopClient } from "./ShopClient";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,11 +65,7 @@ export default function ShopPage() {
         <Link href="/">
           <Logo />
         </Link>
-        <nav className="hidden gap-6 text-sm font-bold uppercase tracking-wider sm:flex">
-          <Link href="/daily" className="hover:text-amber-300">Daily</Link>
-          <Link href="/solo" className="hover:text-amber-300">Solo</Link>
-          <Link href="/rooms" className="hover:text-amber-300">Rooms</Link>
-        </nav>
+        <MainNav />
       </header>
 
       <section className="mt-8 w-full max-w-5xl">

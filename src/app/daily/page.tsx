@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { DailyGame } from "./DailyGame";
 import { Logo } from "@/components/branding/Logo";
+import { MainNav } from "@/components/MainNav";
 import { createClient } from "@/lib/supabase/server";
 import type { RiffleTrack } from "@/lib/itunes";
 import { dayKeyFor, pickTrackForDay, toRiffleTrack } from "@/lib/daily/pick";
@@ -62,11 +63,9 @@ function DailyGameSkeleton() {
 export default function DailyPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-8">
-      <header className="flex w-full max-w-md items-center justify-between gap-3">
+      <header className="flex w-full max-w-5xl items-center justify-between">
         <Link href="/"><Logo /></Link>
-        <span className="rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 text-xs font-black text-stone-900">
-          🔥 0
-        </span>
+        <MainNav />
       </header>
       <h1 className="mt-6 text-3xl font-black text-amber-100">Today&rsquo;s Riffle</h1>
       <p className="mb-6 text-sm text-amber-100/60">A fresh song every day</p>

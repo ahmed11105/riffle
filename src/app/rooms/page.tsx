@@ -7,6 +7,7 @@ import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { loadLocalPlayer, saveLocalPlayer } from "@/lib/rooms";
 import { adminHeaders } from "@/lib/admin";
+import { MainNav } from "@/components/MainNav";
 
 export default function RoomsPage() {
   const router = useRouter();
@@ -83,11 +84,7 @@ export default function RoomsPage() {
     <main className="flex flex-1 flex-col items-center px-6 py-10">
       <header className="flex w-full max-w-5xl items-center justify-between">
         <Link href="/"><Logo /></Link>
-        <nav className="hidden gap-6 text-sm font-bold uppercase tracking-wider sm:flex">
-          <Link href="/daily" className="hover:text-amber-300">Daily</Link>
-          <Link href="/solo" className="hover:text-amber-300">Solo</Link>
-          <Link href="/rooms" className="text-amber-300">Rooms</Link>
-        </nav>
+        <MainNav />
       </header>
 
       <section className="mt-10 flex w-full max-w-md flex-col items-center text-center">
