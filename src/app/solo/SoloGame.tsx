@@ -207,11 +207,13 @@ export function SoloGame() {
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-6">
       <div className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-amber-100/60">
-        <span>
-          {stats.solved}/{stats.played} solved
-        </span>
+        <div className="flex items-center gap-3">
+          <span>
+            {stats.solved}/{stats.played} solved
+          </span>
+          <span>#{stats.played + 1}</span>
+        </div>
         <RiffsBadge />
-        <span>#{stats.played + 1}</span>
       </div>
       <ClipLadder currentLevel={LEVELS[levelIdx]} guesses={ladder} />
       {!done && (

@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function AdminPage() {
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-8">
+    <main className="flex flex-1 flex-col items-center px-6 py-10">
       <header className="flex w-full max-w-6xl items-center justify-between gap-3">
         <Link href="/"><Logo /></Link>
         <Link

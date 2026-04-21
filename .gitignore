@@ -46,3 +46,7 @@ supabase/.branches/
 
 # Playwright MCP screenshots (dev-only)
 .playwright-mcp/
+
+# Sentry Config File
+.env.sentry-build-plugin
+.env.local
