@@ -103,8 +103,8 @@ export default function TermsPage() {
       <p>
         If you are a rights holder and believe content accessible through
         Riffle infringes your copyright, send a written notice to{" "}
-        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
-          support@riffle.cc
+        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
+          rifflehq@gmail.com
         </a>{" "}
         with the subject line &ldquo;DMCA Takedown&rdquo;. Per 17 U.S.C.
         &sect; 512(c)(3), the notice must include:
@@ -161,8 +161,8 @@ export default function TermsPage() {
       <h2 className="mt-8 text-2xl font-black">9. Termination</h2>
       <p>
         You can stop using Riffle at any time and request account deletion via{" "}
-        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
-          support@riffle.cc
+        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
+          rifflehq@gmail.com
         </a>
         . We can suspend or terminate your access for a violation of these
         terms.
@@ -187,12 +187,12 @@ export default function TermsPage() {
       <p>
         For questions about these terms or any other Riffle-related matter,
         email{" "}
-        <a href="mailto:legal@riffle.cc" className="font-bold text-amber-700 underline">
-          legal@riffle.cc
+        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
+          rifflehq@gmail.com
         </a>{" "}
         or{" "}
-        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
-          support@riffle.cc
+        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
+          rifflehq@gmail.com
         </a>
         .
       </p>

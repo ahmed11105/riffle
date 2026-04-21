@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const SUPPORT_EMAIL = "support@riffle.cc";
+const SUPPORT_EMAIL = "rifflehq@gmail.com";
 
 export function ContactClient() {
   const [copied, setCopied] = useState(false);

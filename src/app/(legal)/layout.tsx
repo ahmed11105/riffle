@@ -16,8 +16,8 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       </article>
       <p className="mt-6 text-xs text-amber-100/40">
         Operated by Riffle. Contact:{" "}
-        <a href="mailto:support@riffle.cc" className="underline hover:text-amber-300">
-          support@riffle.cc
+        <a href="mailto:rifflehq@gmail.com" className="underline hover:text-amber-300">
+          rifflehq@gmail.com
         </a>
       </p>
     </main>
