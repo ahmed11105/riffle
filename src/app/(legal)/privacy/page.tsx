@@ -18,8 +18,8 @@ export default function PrivacyPage() {
         Riffle (&ldquo;we&rdquo;, &ldquo;us&rdquo;) operates the website at{" "}
         <strong>riffle.cc</strong> and the daily song-guessing game accessible
         through it. For privacy questions, contact us at{" "}
-        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
-          rifflehq@gmail.com
+        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
+          support@riffle.cc
         </a>
         .
       </p>
@@ -97,8 +97,8 @@ export default function PrivacyPage() {
         Depending on your jurisdiction (e.g. UK GDPR, EU GDPR, CCPA), you have
         the right to access, correct, export, or delete your personal data. To
         exercise any of these rights, email{" "}
-        <a href="mailto:rifflehq@gmail.com" className="font-bold text-amber-700 underline">
-          rifflehq@gmail.com
+        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
+          support@riffle.cc
         </a>{" "}
         and we&rsquo;ll respond within 30 days.
       </p>
