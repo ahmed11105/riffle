@@ -187,8 +187,8 @@ export default function TermsPage() {
       <p>
         For questions about these terms or any other Riffle-related matter,
         email{" "}
-        <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
-          support@riffle.cc
+        <a href="mailto:legal@riffle.cc" className="font-bold text-amber-700 underline">
+          legal@riffle.cc
         </a>{" "}
         or{" "}
         <a href="mailto:support@riffle.cc" className="font-bold text-amber-700 underline">
