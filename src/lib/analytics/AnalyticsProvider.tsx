@@ -23,6 +23,10 @@ function initPostHog() {
     autocapture: false,
     person_profiles: "identified_only",
     persistence: "localStorage+cookie",
+    // We don't use feature flags or A/B tests; skipping the /flags/
+    // request avoids a noisy 401 when the project key doesn't grant
+    // flag-read scope.
+    advanced_disable_feature_flags: true,
   });
   initialized = true;
 }

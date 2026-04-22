@@ -6,6 +6,8 @@ import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
 import { RevealCard } from "@/components/game/RevealCard";
+import { ShareGrid } from "@/components/game/ShareGrid";
+import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
@@ -21,7 +23,13 @@ type Guess = { kind: "correct" | "wrong" | "skipped"; value: string };
 // game: finished reveal state stays revealed, and an in-progress session
 // resumes at the clip level the player had reached. The key is scoped by
 // track id so a new track (= new day) naturally gets a fresh session.
-type FinishedState = { correct: boolean; levelSolved?: number };
+type FinishedState = {
+  correct: boolean;
+  levelSolved?: number;
+  // Guesses kept for the share grid. Older saves without this field
+  // still work — the grid just renders solid-yellow placeholders.
+  guesses?: Guess[];
+};
 type SessionState = { levelIdx: number; guesses: Guess[] };
 const DONE_PREFIX = "riffle:daily:done:";
 const SESSION_PREFIX = "riffle:daily:session:";
@@ -64,6 +72,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   const [levelIdx, setLevelIdx] = useState(0);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [replayToken, setReplayToken] = useState(0);
   const [done, setDone] = useState<FinishedState | null>(null);
   // The server now resolves overrides from Supabase before passing the
   // track prop, so we just use whatever the server gave us. The title
@@ -80,6 +89,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
     const finished = loadFinished(track.id);
     if (finished) {
       setDone(finished);
+      if (finished.guesses) setGuesses(finished.guesses);
       return;
     }
     const session = loadSession(track.id);
@@ -142,9 +152,9 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
     setGuesses(nextArr);
     setPlaying(false);
     if (correct) {
-      setDone({ correct: true, levelSolved: LEVELS[levelIdx] });
+      setDone({ correct: true, levelSolved: LEVELS[levelIdx], guesses: nextArr });
     } else if (levelIdx >= LEVELS.length - 1) {
-      setDone({ correct: false });
+      setDone({ correct: false, guesses: nextArr });
     } else {
       setLevelIdx(levelIdx + 1);
     }
@@ -157,7 +167,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
     setGuesses(nextArr);
     setPlaying(false);
     if (levelIdx >= LEVELS.length - 1) {
-      setDone({ correct: false });
+      setDone({ correct: false, guesses: nextArr });
     } else {
       setLevelIdx(levelIdx + 1);
     }
@@ -180,7 +190,12 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             src={proxiedSrc}
             maxSeconds={current}
             playing={playing}
+            replayToken={replayToken}
             onToggle={() => setPlaying((p) => !p)}
+            onReplay={() => {
+              setPlaying(true);
+              setReplayToken((t) => t + 1);
+            }}
             onEnded={() => setPlaying(false)}
           />
           <p className="text-xs text-amber-100/60">
@@ -196,6 +211,12 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             correct={done.correct}
             levelSolved={done.levelSolved}
           />
+          <ShareGrid
+            date={new Date().toISOString().slice(0, 10)}
+            guesses={(done.guesses ?? guesses).map((g) => g.kind)}
+            correct={done.correct}
+          />
+          <SaveProgressNudge />
           <NextDailyCountdown />
           <KeepPlayingCTA />
         </>
@@ -232,6 +253,7 @@ function AdminBar({ onResetDaily }: { onResetDaily: () => void }) {
 
 function NextDailyCountdown() {
   const [text, setText] = useState("");
+  const [localTime, setLocalTime] = useState("");
   useEffect(() => {
     function tick() {
       const now = new Date();
@@ -242,6 +264,11 @@ function NextDailyCountdown() {
       const m = Math.floor((ms % 3_600_000) / 60_000);
       const s = Math.floor((ms % 60_000) / 1000);
       setText(`${h}h ${m}m ${s}s`);
+      // Show the user when the next puzzle drops in *their* local clock.
+      // Renders client-side so the timezone is correct.
+      setLocalTime(
+        next.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+      );
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -251,6 +278,11 @@ function NextDailyCountdown() {
     <div className="text-center text-sm text-amber-100/70">
       Come back tomorrow for a new song
       <div className="mt-1 font-mono text-lg font-black text-amber-300">{text}</div>
+      {localTime && (
+        <div className="mt-0.5 text-xs text-amber-100/50">
+          New puzzle at {localTime} your time
+        </div>
+      )}
     </div>
   );
 }

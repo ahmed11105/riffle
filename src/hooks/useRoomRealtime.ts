@@ -167,9 +167,24 @@ export function useRoomRealtime(code: string): Returned {
   const loadRef = useRef(loadAll);
   loadRef.current = loadAll;
 
+  // Skip a tick if a previous loadAll is still in flight. Without this,
+  // the 1s interval stacks parallel supabase calls that fight for the
+  // auth-js Web Lock and never resolve — symptom is the lobby getting
+  // stuck on "Loading room…" indefinitely.
+  const inflightRef = useRef(false);
+  const pollOnce = useCallback(async () => {
+    if (inflightRef.current) return;
+    inflightRef.current = true;
+    try {
+      await loadRef.current();
+    } finally {
+      inflightRef.current = false;
+    }
+  }, []);
+
   useEffect(() => {
-    loadAll();
-    const pollId = setInterval(() => loadRef.current(), 1000);
+    pollOnce();
+    const pollId = setInterval(pollOnce, 1500);
 
     const channel = supabase
       .channel(`riffle:room:${code}`)

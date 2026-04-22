@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { useAudioStore } from "@/lib/store/audio";
 
 type Props = {
@@ -11,6 +11,11 @@ type Props = {
   playing: boolean;
   onToggle: () => void;
   onEnded: () => void;
+  // Bumping this number while `playing` is already true forces a restart
+  // from t=0. Lets parents implement a one-tap replay without first
+  // pausing.
+  replayToken?: number;
+  onReplay?: () => void;
   trackTitle?: string;
   trackArtist?: string;
 };
@@ -21,6 +26,8 @@ export function AudioClip({
   playing,
   onToggle,
   onEnded,
+  replayToken = 0,
+  onReplay,
   trackTitle,
   trackArtist,
 }: Props) {
@@ -91,20 +98,32 @@ export function AudioClip({
     return () => {
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
     };
-  }, [playing, maxSeconds, src, registerAudio, pathname, trackTitle, trackArtist]);
+  }, [playing, maxSeconds, src, registerAudio, pathname, trackTitle, trackArtist, replayToken]);
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={playing ? "Pause" : "Play"}
-        className="group h-24 w-24 rounded-full bg-amber-400 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_4px_0_0_rgba(0,0,0,0.9)]"
-      >
-        <div className="flex h-full w-full items-center justify-center">
-          {playing ? <Pause className="h-10 w-10" /> : <Play className="ml-1 h-10 w-10" />}
-        </div>
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={playing ? "Pause" : "Play"}
+          className="group h-24 w-24 rounded-full bg-amber-400 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_4px_0_0_rgba(0,0,0,0.9)]"
+        >
+          <div className="flex h-full w-full items-center justify-center">
+            {playing ? <Pause className="h-10 w-10" /> : <Play className="ml-1 h-10 w-10" />}
+          </div>
+        </button>
+        {onReplay && (
+          <button
+            type="button"
+            onClick={onReplay}
+            aria-label="Replay clip"
+            className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-stone-900 bg-stone-50 text-stone-900 shadow-[0_4px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+          >
+            <RotateCcw className="h-5 w-5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pause, Play, SkipForward, X, LogOut, XCircle } from "lucide-react";
+import { Pause, Play, SkipForward, X, LogOut, XCircle, Share2, Check } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
@@ -44,6 +44,7 @@ export function RoomGame({ code }: { code: string }) {
   const [track, setTrack] = useState<RiffleTrack | null>(null);
   const [hints, setHints] = useState<{ kind: HintKind; value: string }[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [replayToken, setReplayToken] = useState(0);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [advancing, setAdvancing] = useState(false);
 
@@ -658,7 +659,12 @@ export function RoomGame({ code }: { code: string }) {
                 src={proxiedSrc}
                 maxSeconds={LEVELS[levelIdx]}
                 playing={playing}
+                replayToken={replayToken}
                 onToggle={() => setPlaying((p) => !p)}
+                onReplay={() => {
+                  setPlaying(true);
+                  setReplayToken((t) => t + 1);
+                }}
                 onEnded={() => setPlaying(false)}
               />
               <p className="text-xs text-amber-100/60">
@@ -841,6 +847,7 @@ function Lobby({
           Share this code
         </div>
         <div className="mt-1 font-mono text-4xl font-black tracking-widest">{code}</div>
+        <CopyInviteButton code={code} />
         <p className="mt-2 text-sm text-stone-600">
           {players.length === 0
             ? "Waiting for players to join…"
@@ -1069,5 +1076,52 @@ function FinalResults({
         Exit to rooms list
       </button>
     </div>
+  );
+}
+
+function CopyInviteButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function shareOrCopy() {
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/rooms/${code}`
+        : `https://riffle.cc/rooms/${code}`;
+    const text = `Join my Riffle room — code ${code}`;
+    const canNativeShare =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+    if (canNativeShare) {
+      try {
+        await navigator.share({ title: "Riffle room", text, url });
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={shareOrCopy}
+      className="mt-3 inline-flex items-center gap-2 rounded-full border-4 border-stone-900 bg-amber-400 px-5 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+    >
+      {copied ? (
+        <>
+          <Check className="h-4 w-4" /> Link copied
+        </>
+      ) : (
+        <>
+          <Share2 className="h-4 w-4" /> Copy invite link
+        </>
+      )}
+    </button>
   );
 }
