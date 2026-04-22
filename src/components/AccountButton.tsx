@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
+import { ChevronDown, LogOut, User as UserIcon, Settings as SettingsIcon, Gift } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 // Account entry point shown in the top-right header (desktop) and as a
@@ -148,6 +148,15 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
             className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-amber-200"
           >
             <UserIcon className="h-4 w-4" /> Profile
+          </Link>
+
+          <Link
+            href="/invite"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-amber-200"
+          >
+            <Gift className="h-4 w-4" /> Invite friends
           </Link>
 
           <Link

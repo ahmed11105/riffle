@@ -12,6 +12,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { AccountButton } from "@/components/AccountButton";
+import { ReferralRedeemer } from "@/components/ReferralRedeemer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -92,6 +93,9 @@ export default function RootLayout({
             </Suspense>
             <Onboarding />
             <ConsentBanner />
+            <Suspense>
+              <ReferralRedeemer />
+            </Suspense>
           </AnalyticsProvider>
         </AuthProvider>
       </body>
