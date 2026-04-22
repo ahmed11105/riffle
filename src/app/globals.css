@@ -103,13 +103,27 @@ body {
   cursor: pointer;
   border: 2px solid #1c1917;
 }
-/* Cream-pill variant: dark translucent track that reads on cream bg.
-   Thumb stays the same amber-with-dark-border. */
+/* Cream-pill variant: stone-900 fill on the left of the thumb,
+   translucent dark on the right — fills up to indicate level. The
+   stop position is driven by --vol-fill set inline by VolumeControl
+   from the current value (0%..100%). */
 .riffle-vol-slider--on-cream::-webkit-slider-runnable-track {
-  background: rgba(28, 25, 23, 0.25);
+  background: linear-gradient(
+    to right,
+    #1c1917 0%,
+    #1c1917 var(--vol-fill, 0%),
+    rgba(28, 25, 23, 0.2) var(--vol-fill, 0%),
+    rgba(28, 25, 23, 0.2) 100%
+  );
 }
 .riffle-vol-slider--on-cream::-moz-range-track {
-  background: rgba(28, 25, 23, 0.25);
+  background: linear-gradient(
+    to right,
+    #1c1917 0%,
+    #1c1917 var(--vol-fill, 0%),
+    rgba(28, 25, 23, 0.2) var(--vol-fill, 0%),
+    rgba(28, 25, 23, 0.2) 100%
+  );
   border: none;
 }
 .riffle-vol-slider--on-cream::-webkit-slider-thumb {

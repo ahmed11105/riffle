@@ -35,7 +35,15 @@ export function VolumeControl() {
         onChange={(e) => setVolume(Number(e.target.value))}
         aria-label="Volume"
         className="riffle-vol-slider riffle-vol-slider--on-cream"
-        style={{ width: "100px", height: "20px" }}
+        style={
+          {
+            width: "100px",
+            height: "20px",
+            // Drives the linear-gradient stop on the track so the
+            // left of the thumb reads as "filled".
+            "--vol-fill": `${effective * 100}%`,
+          } as React.CSSProperties
+        }
       />
     </div>
   );
