@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountButton } from "@/components/AccountButton";
 
 // Shared top-right nav used by every page's header. One source of
 // truth so the Daily / Solo / Rooms / Leaderboard / Shop set stays
@@ -17,6 +18,7 @@ export function MainNav() {
       >
         Shop
       </Link>
+      <AccountButton />
     </nav>
   );
 }

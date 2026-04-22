@@ -13,6 +13,7 @@ const PRIMARY: { href: string; label: string; emphasis?: boolean }[] = [
   { href: "/rooms", label: "Friends Rooms" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/shop", label: "Shop", emphasis: true },
+  { href: "/account", label: "Account" },
 ];
 
 const SECONDARY = [

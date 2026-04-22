@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
 import { useAdminMode } from "@/lib/admin";
+import { MagicLinkForm } from "@/components/MagicLinkForm";
 
 type Pack = {
   slug: string;
@@ -36,7 +37,7 @@ export function ShopClient({
   packs: Pack[];
   unlockedSlugs: string[];
 }) {
-  const { user, isAnonymous, isPro: realIsPro, signInWithEmail } = useAuth();
+  const { user, isAnonymous, isPro: realIsPro } = useAuth();
   const { balance, claimAdReward, ready } = useRiffs();
   const [adminOn] = useAdminMode();
   // Admin = effective Pro for all UX gates (ads hidden, packs free, etc).
@@ -44,9 +45,6 @@ export function ShopClient({
   const { track } = useAnalytics();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [emailMsg, setEmailMsg] = useState<string | null>(null);
-  const [ageOk, setAgeOk] = useState(false);
   const [unlockingSlug, setUnlockingSlug] = useState<string | null>(null);
   const [unlockedNow, setUnlockedNow] = useState<Set<string>>(new Set());
   const [adState, setAdState] = useState<
@@ -139,26 +137,7 @@ export function ShopClient({
     }
   }
 
-  async function sendMagicLink() {
-    setEmailMsg(null);
-    if (!email.includes("@")) {
-      setEmailMsg("Enter a valid email.");
-      return;
-    }
-    if (!ageOk) {
-      setEmailMsg("Please confirm you're 13 or older.");
-      return;
-    }
-    track(EVENTS.SIGNUP_STARTED, { method: "magic_link" });
-    const { error } = await signInWithEmail(email);
-    if (error) {
-      setEmailMsg(error);
-    } else {
-      setEmailMsg("Check your email for a magic link.");
-    }
-  }
-
-  async function subscribePro() {
+async function subscribePro() {
     if (!user) return;
     if (isAnonymous) {
       setProMsg("Sign in below before subscribing so your Pro perks stay with you.");
@@ -441,45 +420,9 @@ export function ShopClient({
             Add an email to keep your Riffs, streak, and unlocked packs across
             devices. We&rsquo;ll send a one-tap magic link, no password.
           </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 rounded-full border-4 border-stone-900 bg-white px-4 py-2 text-stone-900 placeholder:text-stone-400"
-            />
-            <button
-              type="button"
-              onClick={sendMagicLink}
-              className="rounded-full border-4 border-stone-900 bg-amber-400 px-6 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
-            >
-              Send link
-            </button>
+          <div className="mt-3">
+            <MagicLinkForm />
           </div>
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-stone-600">
-            <input
-              type="checkbox"
-              checked={ageOk}
-              onChange={(e) => setAgeOk(e.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer accent-amber-500"
-            />
-            <span>
-              I confirm I&rsquo;m at least 13 years old (16 in the EU/UK) and
-              accept the{" "}
-              <Link href="/terms" className="font-bold text-amber-700 underline">
-                terms
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="font-bold text-amber-700 underline">
-                privacy policy
-              </Link>
-              .
-            </span>
-          </label>
-          {emailMsg && (
-            <p className="mt-2 text-sm font-bold text-stone-700">{emailMsg}</p>
-          )}
         </section>
       )}
     </div>

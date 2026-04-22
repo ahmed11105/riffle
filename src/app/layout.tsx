@@ -11,6 +11,7 @@ import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
 import { Onboarding } from "@/components/Onboarding";
 import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
+import { AccountButton } from "@/components/AccountButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -80,6 +81,9 @@ export default function RootLayout({
             </Suspense>
             <Suspense>
               <MobileNav />
+            </Suspense>
+            <Suspense>
+              <AccountButton variant="floating" />
             </Suspense>
             {children}
             <Footer />
