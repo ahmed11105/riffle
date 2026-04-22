@@ -135,3 +135,15 @@ body {
   width: 12px;
   height: 12px;
 }
+
+/* Subtle pulse for the GlobalAudioBar waveform bars while audio is
+   playing. Each bar has its own animationDelay (staggered) so the
+   wave looks alive instead of pulsing in unison. */
+@keyframes riffle-wave-pulse {
+  0%, 100% { transform: scaleY(0.6); }
+  50%      { transform: scaleY(1.15); }
+}
+.riffle-wave-bar {
+  transform-origin: center;
+  animation: riffle-wave-pulse 900ms ease-in-out infinite;
+}

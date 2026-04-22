@@ -1,111 +1,109 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Play, Pause, SkipBack, Square, ArrowLeft } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Play, Pause, X } from "lucide-react";
 import { useAudioStore } from "@/lib/store/audio";
 
+// Floating playback bar styled to match the marketing banner: dark
+// stone-900 pill, amber play button, decorative waveform, current
+// clip "+Xs" pill, amber GUESS button that returns the player to
+// the page they were guessing on.
+//
+// Hidden when no audio is registered or when the user is already on
+// the origin page (so it doesn't double up with the in-game player).
 export function GlobalAudioBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     globalAudio,
     globalOriginPath,
-    globalTrackTitle,
-    globalTrackArtist,
     globalPlaying,
+    globalMaxSeconds,
     globalPlay,
     globalPause,
     globalStop,
-    globalRewind,
-    volume,
-    muted,
-    setVolume,
   } = useAudioStore();
 
-  // Only show when audio is active AND we're NOT on the page that started it.
   if (!globalAudio) return null;
   if (globalOriginPath && pathname === globalOriginPath) return null;
 
+  const clipLabel =
+    globalMaxSeconds && globalMaxSeconds > 0 ? `${globalMaxSeconds}s` : "—";
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-stone-900 bg-stone-900/95 px-4 py-2 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-3xl items-center gap-3">
-        {/* Track info */}
-        <div className="min-w-0 flex-1">
-          {globalTrackTitle && (
-            <div className="truncate text-sm font-black text-amber-100">
-              {globalTrackTitle}
-            </div>
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2">
+      <div className="pointer-events-auto mx-auto flex max-w-2xl items-center gap-2 rounded-full border-4 border-stone-900 bg-stone-900 p-1.5 shadow-[0_6px_0_0_rgba(0,0,0,0.9)]">
+        {/* Play / Pause */}
+        <button
+          type="button"
+          onClick={globalPlaying ? globalPause : globalPlay}
+          aria-label={globalPlaying ? "Pause" : "Play"}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-stone-900 bg-amber-400 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.6)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.6)]"
+        >
+          {globalPlaying ? (
+            <Pause className="h-5 w-5" />
+          ) : (
+            <Play className="ml-0.5 h-5 w-5" />
           )}
-          {globalTrackArtist && (
-            <div className="truncate text-xs text-amber-100/60">
-              {globalTrackArtist}
-            </div>
-          )}
-          {!globalTrackTitle && (
-            <div className="text-sm font-black text-amber-100/80">
-              Mystery track
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-100/50">
-                Not revealed yet
-              </span>
-            </div>
-          )}
+        </button>
+
+        {/* Decorative waveform — pulses subtly while playing */}
+        <Waveform playing={globalPlaying} />
+
+        {/* Current clip duration pill (matches the in-game +Xs ladder) */}
+        <div className="hidden h-9 shrink-0 items-center justify-center rounded-full bg-stone-700 px-3 text-xs font-black text-amber-100/90 sm:flex">
+          {clipLabel}
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={globalRewind}
-            aria-label="Rewind"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-amber-100 hover:bg-amber-400/20"
-          >
-            <SkipBack className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={globalPlaying ? globalPause : globalPlay}
-            aria-label={globalPlaying ? "Pause" : "Play"}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]"
-          >
-            {globalPlaying ? (
-              <Pause className="h-5 w-5" />
-            ) : (
-              <Play className="ml-0.5 h-5 w-5" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={globalStop}
-            aria-label="Stop"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-amber-100 hover:bg-amber-400/20"
-          >
-            <Square className="h-4 w-4" />
-          </button>
-        </div>
+        {/* GUESS button: navigate back to the origin (guessing) page */}
+        <button
+          type="button"
+          onClick={() => {
+            if (globalOriginPath) router.push(globalOriginPath);
+          }}
+          className="flex h-9 shrink-0 items-center rounded-full bg-amber-400 px-4 text-sm font-black tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.7)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.7)]"
+        >
+          GUESS
+        </button>
 
-        {/* Volume slider */}
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={muted ? 0 : volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
-          className="w-20 accent-amber-400"
-          aria-label="Volume"
-        />
-
-        {/* Go back link */}
-        {globalOriginPath && (
-          <Link
-            href={globalOriginPath}
-            className="flex items-center gap-1 rounded-full border-2 border-amber-400 px-3 py-1 text-xs font-black text-amber-400 hover:bg-amber-400/10"
-          >
-            <ArrowLeft className="h-3 w-3" />
-            Back
-          </Link>
-        )}
+        {/* Tiny stop / dismiss */}
+        <button
+          type="button"
+          onClick={globalStop}
+          aria-label="Stop"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-amber-100/40 transition hover:text-amber-100"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
+    </div>
+  );
+}
+
+// Stylized 24-bar waveform. Heights are hardcoded to evoke a real
+// audio peak shape (matches the marketing banner). When the audio
+// is playing, the bars get a subtle scale animation.
+const BAR_HEIGHTS = [
+  6, 10, 14, 22, 18, 28, 16, 12, 24, 30, 20, 14, 10, 16, 26, 22, 14, 10, 18, 24,
+  12, 8, 14, 20,
+];
+
+function Waveform({ playing }: { playing: boolean }) {
+  return (
+    <div className="flex h-9 min-w-0 flex-1 items-center justify-center gap-[2px] overflow-hidden">
+      {BAR_HEIGHTS.map((h, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={`block w-[3px] rounded-full bg-amber-100 ${playing ? "riffle-wave-bar" : ""}`}
+          style={{
+            height: `${h}px`,
+            // Stagger the animation start so the bars don't all
+            // pulse in sync.
+            animationDelay: playing ? `${i * 60}ms` : undefined,
+          }}
+        />
+      ))}
     </div>
   );
 }
