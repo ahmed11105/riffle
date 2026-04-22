@@ -50,12 +50,6 @@ const PROMOS: Promo[] = [
     cta: "Open Rooms",
     href: "/rooms",
   },
-  {
-    id: "save",
-    body: "Save your streak across devices with a one-tap magic link",
-    cta: "Sign in",
-    href: "/account",
-  },
 ];
 
 export function HousePromo() {
@@ -66,8 +60,6 @@ export function HousePromo() {
     const eligible = PROMOS.filter((p) => {
       if (p.signedInOnly && isAnonymous) return false;
       if (p.hideOn?.some((prefix) => pathname.startsWith(prefix))) return false;
-      // Hide the "save your streak" pitch once they've signed in.
-      if (p.id === "save" && !isAnonymous) return false;
       return true;
     });
     if (eligible.length === 0) return null;
