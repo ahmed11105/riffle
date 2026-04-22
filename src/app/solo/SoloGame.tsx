@@ -73,7 +73,6 @@ export function SoloGame() {
     ("pending" | "wrong" | "skipped" | "correct")[]
   >([]);
   const [playing, setPlaying] = useState(false);
-  const [replayToken, setReplayToken] = useState(0);
   const [done, setDone] = useState<null | {
     correct: boolean;
     levelSolved?: number;
@@ -223,12 +222,7 @@ export function SoloGame() {
             src={proxiedSrc}
             maxSeconds={LEVELS[levelIdx]}
             playing={playing}
-            replayToken={replayToken}
             onToggle={() => setPlaying((p) => !p)}
-            onReplay={() => {
-              setPlaying(true);
-              setReplayToken((t) => t + 1);
-            }}
             onEnded={() => setPlaying(false)}
           />
           <p className="text-xs text-amber-100/60">

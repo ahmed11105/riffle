@@ -44,7 +44,6 @@ export function RoomGame({ code }: { code: string }) {
   const [track, setTrack] = useState<RiffleTrack | null>(null);
   const [hints, setHints] = useState<{ kind: HintKind; value: string }[]>([]);
   const [playing, setPlaying] = useState(false);
-  const [replayToken, setReplayToken] = useState(0);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [advancing, setAdvancing] = useState(false);
 
@@ -659,12 +658,7 @@ export function RoomGame({ code }: { code: string }) {
                 src={proxiedSrc}
                 maxSeconds={LEVELS[levelIdx]}
                 playing={playing}
-                replayToken={replayToken}
                 onToggle={() => setPlaying((p) => !p)}
-                onReplay={() => {
-                  setPlaying(true);
-                  setReplayToken((t) => t + 1);
-                }}
                 onEnded={() => setPlaying(false)}
               />
               <p className="text-xs text-amber-100/60">

@@ -72,7 +72,6 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   const [levelIdx, setLevelIdx] = useState(0);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [playing, setPlaying] = useState(false);
-  const [replayToken, setReplayToken] = useState(0);
   const [done, setDone] = useState<FinishedState | null>(null);
   // The server now resolves overrides from Supabase before passing the
   // track prop, so we just use whatever the server gave us. The title
@@ -190,12 +189,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             src={proxiedSrc}
             maxSeconds={current}
             playing={playing}
-            replayToken={replayToken}
             onToggle={() => setPlaying((p) => !p)}
-            onReplay={() => {
-              setPlaying(true);
-              setReplayToken((t) => t + 1);
-            }}
             onEnded={() => setPlaying(false)}
           />
           <p className="text-xs text-amber-100/60">
