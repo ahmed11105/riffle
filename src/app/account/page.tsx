@@ -8,81 +8,18 @@ import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
-import { PRO_MONTHLY_GBP, PRO_PERKS } from "@/lib/riffs/pro";
 import { createClient } from "@/lib/supabase/client";
 
-function formatGbp(pence: number): string {
-  return `£${(pence / 100).toFixed(2)}`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export default function AccountPage() {
-  const { user, profile, streak, isAnonymous, isPro, loading, signOut } = useAuth();
+  const { user, profile, streak, isAnonymous, isPro, loading } = useAuth();
   const { balance } = useRiffs();
   const router = useRouter();
-  const [proLoading, setProLoading] = useState(false);
-  const [proMsg, setProMsg] = useState<string | null>(null);
-  const [signOutLoading, setSignOutLoading] = useState(false);
 
-  // /account is the signed-in dashboard. Anonymous players go to /signin.
+  // /account is the signed-in profile page. Anonymous players go to /signin.
   useEffect(() => {
     if (loading) return;
     if (isAnonymous) router.replace("/signin");
   }, [loading, isAnonymous, router]);
-
-  async function subscribePro() {
-    if (!user) return;
-    if (isAnonymous) {
-      setProMsg("Sign in below before subscribing so your Pro perks stay with you.");
-      return;
-    }
-    setProLoading(true);
-    setProMsg(null);
-    try {
-      const res = await fetch("/api/stripe/subscribe", { method: "POST" });
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !json.url) {
-        setProMsg(json.error ?? "Couldn't start subscription.");
-        return;
-      }
-      window.location.href = json.url;
-    } finally {
-      setProLoading(false);
-    }
-  }
-
-  async function openProPortal() {
-    setProLoading(true);
-    setProMsg(null);
-    try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !json.url) {
-        setProMsg(json.error ?? "Couldn't open subscription portal.");
-        return;
-      }
-      window.location.href = json.url;
-    } finally {
-      setProLoading(false);
-    }
-  }
-
-  async function handleSignOut() {
-    setSignOutLoading(true);
-    try {
-      await signOut();
-    } finally {
-      setSignOutLoading(false);
-    }
-  }
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
@@ -121,66 +58,6 @@ export default function AccountPage() {
           <Stat label="Best streak" value={streak?.longest_streak ?? 0} suffix="days" />
           <Stat label="Riffs" value={balance} />
           <Stat label="Level" value={profile?.level ?? 1} />
-        </section>
-
-        {/* Subscription */}
-        <section className="rounded-3xl border-4 border-stone-900 bg-stone-50 p-6 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
-          <h2 className="text-xl font-black">
-            {isPro ? "Pro subscription" : `Riffle Pro · ${formatGbp(PRO_MONTHLY_GBP)}/mo`}
-          </h2>
-          {isPro ? (
-            <>
-              <p className="mt-1 text-sm text-stone-600">
-                Renews{" "}
-                <strong>{formatDate(profile?.pro_current_period_end ?? null)}</strong>
-                . Manage payment method, view invoices, or cancel anytime.
-              </p>
-              <button
-                type="button"
-                onClick={openProPortal}
-                disabled={proLoading}
-                className="mt-3 inline-flex items-center rounded-full border-4 border-stone-900 bg-amber-400 px-6 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-              >
-                {proLoading ? "Opening…" : "Manage subscription"}
-              </button>
-            </>
-          ) : (
-            <>
-              <ul className="mt-2 ml-5 list-disc space-y-1 text-sm text-stone-700">
-                {PRO_PERKS.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                onClick={subscribePro}
-                disabled={proLoading}
-                className="mt-3 inline-flex items-center rounded-full border-4 border-stone-900 bg-amber-400 px-6 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-              >
-                {proLoading ? "Starting…" : "Subscribe to Pro"}
-              </button>
-            </>
-          )}
-          {proMsg && (
-            <p className="mt-2 text-sm font-bold text-stone-700">{proMsg}</p>
-          )}
-        </section>
-
-        {/* Sign out */}
-        <section className="rounded-3xl border-4 border-stone-900 bg-stone-50 p-6 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
-          <h2 className="text-xl font-black">Sign out</h2>
-          <p className="mt-1 text-sm text-stone-600">
-            Signs you out on this device. Your account, streak, and Pro
-            perks stay safe — sign back in any time with a magic link.
-          </p>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            disabled={signOutLoading}
-            className="mt-3 inline-flex items-center rounded-full border-4 border-stone-900 bg-stone-100 px-6 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-          >
-            {signOutLoading ? "Signing out…" : "Sign out"}
-          </button>
         </section>
       </div>
       )}
