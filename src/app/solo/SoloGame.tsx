@@ -235,10 +235,6 @@ export function SoloGame() {
             onToggle={() => setPlaying((p) => !p)}
             onEnded={() => setPlaying(false)}
           />
-          <p className="text-xs text-amber-100/60">
-            Playing the first {LEVELS[levelIdx]} second
-            {LEVELS[levelIdx] === 1 ? "" : "s"}
-          </p>
           <div className="flex w-full max-w-md flex-col gap-1">
             <div className="self-start">
               <VolumeControl />
