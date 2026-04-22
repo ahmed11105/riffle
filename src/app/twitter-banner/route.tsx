@@ -6,8 +6,6 @@ import { ImageResponse } from "next/og";
 // keep the wordmark and tagline right of that.
 //
 // Visit https://riffle.cc/twitter-banner to download.
-export const dynamic = "force-static";
-
 export async function GET() {
   return new ImageResponse(
     (

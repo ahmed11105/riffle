@@ -6,8 +6,6 @@ import { ImageResponse } from "next/og";
 // centred — readable at avatar size where a wordmark wouldn't be.
 //
 // Visit https://riffle.cc/twitter-avatar to download.
-export const dynamic = "force-static";
-
 export async function GET() {
   return new ImageResponse(
     (
