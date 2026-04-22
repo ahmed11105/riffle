@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // resolves; the only goal here is to release the loading gate.
     const failsafe = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 5000);
+    }, 2000);
 
     (async () => {
       try {
@@ -119,15 +119,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         setSession(initial);
         setUser(initial?.user ?? null);
+        // Release the loading gate as soon as we know WHO the user is,
+        // so the header avatar / "Sign in" pill can render immediately.
+        // Profile and streak fetches finish in the background and fill
+        // in the display name + stats when they arrive.
+        setLoading(false);
         if (initial?.user) {
-          await Promise.all([
-            fetchProfile(initial.user.id),
-            fetchStreak(initial.user.id),
-          ]);
+          fetchProfile(initial.user.id);
+          fetchStreak(initial.user.id);
         }
       } catch (e) {
         console.warn("Auth init failed, will rely on onAuthStateChange:", e);
-      } finally {
         if (mounted) setLoading(false);
       }
     })();
@@ -180,11 +182,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // Race the auth call against a timeout. supabase.auth.signOut() goes
+    // through the Web Lock, which can be stolen mid-call (iOS Safari,
+    // incognito) and never resolve. Either way we tear down local state
+    // immediately so the UI updates, and re-create an anonymous session
+    // so the player can keep playing.
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+    try {
+      await Promise.race([supabase.auth.signOut().then(() => undefined), timeout]);
+    } catch (e) {
+      console.warn("supabase.auth.signOut() failed:", e);
+    }
+    setUser(null);
+    setSession(null);
     setProfile(null);
     setStreak(null);
-    // Re-create an anonymous session so the player can keep playing.
-    await ensureSession();
+    // Best-effort anonymous re-init. If this hangs too, onAuthStateChange
+    // will catch up later and the failsafe in the mount effect already
+    // released the loading gate.
+    try {
+      await Promise.race([ensureSession(), timeout]);
+    } catch (e) {
+      console.warn("ensureSession after signOut failed:", e);
+    }
   }, [supabase, ensureSession]);
 
   const isAnonymous = !!user?.is_anonymous;

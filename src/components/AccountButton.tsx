@@ -37,10 +37,24 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
     };
   }, [open]);
 
-  if (loading) return null;
-
   const floating = variant === "floating";
   const baseShadow = "shadow-[0_2px_0_0_rgba(0,0,0,0.9)]";
+
+  // While auth is still resolving, show a neutral placeholder circle so
+  // the header doesn't shift when the real button appears. We don't pick
+  // sign-in vs avatar yet because we don't know the answer.
+  if (loading) {
+    const placeholderCls =
+      `flex h-11 w-11 items-center justify-center rounded-full border-2 border-stone-900/30 bg-stone-50/30 ${baseShadow}`;
+    return floating ? (
+      <div
+        aria-hidden="true"
+        className={`fixed right-3 top-3 z-40 sm:hidden ${placeholderCls}`}
+      />
+    ) : (
+      <div aria-hidden="true" className={placeholderCls} />
+    );
+  }
 
   if (!user || isAnonymous) {
     return (
