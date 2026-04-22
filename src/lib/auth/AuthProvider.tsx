@@ -185,30 +185,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    // Race the auth call against a timeout. supabase.auth.signOut() goes
-    // through the Web Lock, which can be stolen mid-call (iOS Safari,
-    // incognito) and never resolve. Either way we tear down local state
-    // immediately so the UI updates, and re-create an anonymous session
-    // so the player can keep playing.
-    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+    // Sign-out goes through a server-side route (which actually
+    // clears the auth cookies via @supabase/ssr's cookie writer) and
+    // then we hard-reload the page. Doing it client-side via
+    // supabase.auth.signOut() can hang on the navigator.locks Web
+    // Lock and skip cookie clearing — the next refresh would then
+    // resurrect the session.
     try {
-      await Promise.race([supabase.auth.signOut().then(() => undefined), timeout]);
+      await fetch("/api/account/signout", { method: "POST" });
     } catch (e) {
-      console.warn("supabase.auth.signOut() failed:", e);
+      console.warn("signout request failed:", e);
     }
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    setStreak(null);
-    // Best-effort anonymous re-init. If this hangs too, onAuthStateChange
-    // will catch up later and the failsafe in the mount effect already
-    // released the loading gate.
-    try {
-      await Promise.race([ensureSession(), timeout]);
-    } catch (e) {
-      console.warn("ensureSession after signOut failed:", e);
+    // Full reload kills any in-memory session state and forces the
+    // AuthProvider to re-mount with cleared cookies, which then
+    // creates a fresh anonymous session.
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
     }
-  }, [supabase, ensureSession]);
+  }, []);
 
   const isAnonymous = !!user?.is_anonymous;
   const isPro = (() => {

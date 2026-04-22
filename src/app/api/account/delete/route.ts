@@ -49,5 +49,9 @@ export async function POST() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Clear the deleted user's session cookies so the browser doesn't
+  // keep presenting a JWT for an account that no longer exists.
+  await supabase.auth.signOut();
+
   return NextResponse.json({ ok: true });
 }

@@ -23,7 +23,7 @@ function formatDate(iso: string | null): string {
 }
 
 export default function SettingsPage() {
-  const { user, profile, isAnonymous, isPro, loading, signOut } = useAuth();
+  const { user, profile, isAnonymous, isPro, loading } = useAuth();
   const router = useRouter();
   const [proLoading, setProLoading] = useState(false);
   const [proMsg, setProMsg] = useState<string | null>(null);
@@ -125,15 +125,14 @@ export default function SettingsPage() {
           </section>
 
           {/* Danger zone */}
-          <DangerZone signOut={signOut} />
+          <DangerZone />
         </div>
       )}
     </main>
   );
 }
 
-function DangerZone({ signOut }: { signOut: () => Promise<void> }) {
-  const router = useRouter();
+function DangerZone() {
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -150,9 +149,12 @@ function DangerZone({ signOut }: { signOut: () => Promise<void> }) {
         setDeleting(false);
         return;
       }
-      // Tear down the local session and ship them home.
-      await signOut();
-      router.replace("/");
+      // The server already cleared cookies via supabase.auth.signOut().
+      // Hard reload so the AuthProvider re-mounts with no JWT, picks
+      // up the cleared cookies, and creates a fresh anonymous session.
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
       setDeleting(false);
