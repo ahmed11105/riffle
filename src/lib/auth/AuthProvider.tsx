@@ -105,18 +105,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Hard fallback so the UI never gets stuck on "loading" if Supabase's
+    // Web Lock gets stolen mid-init (iOS Safari bfcache, incognito tabs).
+    // We let onAuthStateChange fill in user/session/profile when it eventually
+    // resolves; the only goal here is to release the loading gate.
+    const failsafe = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
+
     (async () => {
-      const initial = await ensureSession();
-      if (!mounted) return;
-      setSession(initial);
-      setUser(initial?.user ?? null);
-      if (initial?.user) {
-        await Promise.all([
-          fetchProfile(initial.user.id),
-          fetchStreak(initial.user.id),
-        ]);
+      try {
+        const initial = await ensureSession();
+        if (!mounted) return;
+        setSession(initial);
+        setUser(initial?.user ?? null);
+        if (initial?.user) {
+          await Promise.all([
+            fetchProfile(initial.user.id),
+            fetchStreak(initial.user.id),
+          ]);
+        }
+      } catch (e) {
+        console.warn("Auth init failed, will rely on onAuthStateChange:", e);
+      } finally {
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
     })();
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
@@ -138,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(failsafe);
       subscription.subscription.unsubscribe();
     };
   }, [ensureSession, fetchProfile, fetchStreak, supabase]);

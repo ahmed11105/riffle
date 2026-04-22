@@ -85,19 +85,55 @@ export function useRoomRealtime(code: string): Returned {
   );
 
   const loadAll = useCallback(async () => {
-    const [{ data: room }, { data: players }] = await Promise.all([
-      supabase.from("rooms").select("*").eq("code", code).maybeSingle(),
-      supabase.from("room_players").select("*").eq("room_code", code),
-    ]);
+    // Race each query against a short timeout. If Supabase's auth lock
+    // gets stolen mid-call (iOS Safari bfcache, incognito), the promise
+    // can hang indefinitely and the room screen would stay on "Loading…"
+    // forever. On timeout we throw and the next 1s poll retries cleanly
+    // without setting `error: "Room not found"`.
+    const withTimeout = <T,>(p: PromiseLike<T>, ms = 4000): Promise<T> =>
+      Promise.race<T>([
+        Promise.resolve(p),
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error("supabase-timeout")), ms),
+        ),
+      ]);
+
+    let room: RoomRow | null;
+    let players: RoomPlayerRow[];
+    try {
+      const [r, p] = await Promise.all([
+        withTimeout(
+          supabase.from("rooms").select("*").eq("code", code).maybeSingle(),
+        ),
+        withTimeout(
+          supabase.from("room_players").select("*").eq("room_code", code),
+        ),
+      ]);
+      room = (r.data as RoomRow | null) ?? null;
+      players = (p.data as RoomPlayerRow[] | null) ?? [];
+    } catch {
+      // Soft-fail. Leave state alone so the existing loading/data shows
+      // and let the next poll retry. Only the very first call needs the
+      // initial loading shell to clear quickly; that path is handled by
+      // a subsequent successful poll.
+      return;
+    }
+
     let round: RoomRoundRow | null = null;
     if (room && room.current_round > 0) {
-      const { data } = await supabase
-        .from("room_rounds")
-        .select("*")
-        .eq("room_code", code)
-        .eq("round_num", room.current_round)
-        .maybeSingle();
-      round = (data as RoomRoundRow | null) ?? null;
+      try {
+        const { data } = await withTimeout(
+          supabase
+            .from("room_rounds")
+            .select("*")
+            .eq("room_code", code)
+            .eq("round_num", room.current_round)
+            .maybeSingle(),
+        );
+        round = (data as RoomRoundRow | null) ?? null;
+      } catch {
+        round = null;
+      }
     }
     setState((prev) => {
       const nextRoom = (room as RoomRow | null) ?? null;
