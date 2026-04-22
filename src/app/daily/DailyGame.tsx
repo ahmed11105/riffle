@@ -111,7 +111,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   // Persist the result the first time we transition to `done`.
   // Also write the result + streak update to Supabase. Best-effort, the
   // local state is the source of truth for the UI.
-  const { user, refreshStreak } = useAuth();
+  const { user, isAnonymous, refreshStreak } = useAuth();
   useEffect(() => {
     if (!done) return;
     saveFinished(track.id, done);
@@ -209,22 +209,56 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         </>
       )}
       {done && (
-        <>
-          <RevealCard
-            track={revealTrack}
-            correct={done.correct}
-            levelSolved={done.levelSolved}
-          />
-          <ShareGrid
-            date={new Date().toISOString().slice(0, 10)}
-            guesses={(done.guesses ?? guesses).map((g) => g.kind)}
-            correct={done.correct}
-          />
-          <SaveProgressNudge />
-          <NextDailyCountdown />
-          <KeepPlayingCTA />
-        </>
+        <RevealLayout
+          track={revealTrack}
+          done={done}
+          guesses={guesses}
+          isAnonymous={isAnonymous}
+        />
       )}
+    </div>
+  );
+}
+
+// Reveal layout owns its own width so it can spread Share + Save side
+// by side at sm+, while gameplay above stays at the narrower max-w-md.
+// KeepPlayingCTA sits right under the reveal card so the next-step
+// action is always above the fold.
+function RevealLayout({
+  track,
+  done,
+  guesses,
+  isAnonymous,
+}: {
+  track: RiffleTrack;
+  done: FinishedState;
+  guesses: Guess[];
+  isAnonymous: boolean;
+}) {
+  const date = new Date().toISOString().slice(0, 10);
+  return (
+    <div className="-mx-2 flex w-[calc(100%+1rem)] max-w-2xl flex-col items-center gap-4 sm:mx-0 sm:w-full">
+      <RevealCard
+        track={track}
+        correct={done.correct}
+        levelSolved={done.levelSolved}
+      />
+      <KeepPlayingCTA prominent />
+      <div
+        className={
+          isAnonymous
+            ? "grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2"
+            : "w-full max-w-md"
+        }
+      >
+        <ShareGrid
+          date={date}
+          guesses={(done.guesses ?? guesses).map((g) => g.kind)}
+          correct={done.correct}
+        />
+        {isAnonymous && <SaveProgressNudge />}
+      </div>
+      <NextDailyCountdown />
     </div>
   );
 }
@@ -291,7 +325,19 @@ function NextDailyCountdown() {
   );
 }
 
-function KeepPlayingCTA() {
+function KeepPlayingCTA({ prominent = false }: { prominent?: boolean } = {}) {
+  if (prominent) {
+    // Full-width amber pill that sits right under RevealCard so the
+    // "what now?" answer is the next thing the player sees.
+    return (
+      <Link
+        href="/solo"
+        className="flex w-full max-w-md items-center justify-center gap-2 rounded-full border-4 border-stone-900 bg-amber-400 px-6 py-3 text-base font-black text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+      >
+        Play Solo Unlimited →
+      </Link>
+    );
+  }
   return (
     <div className="mt-2 flex w-full flex-col items-center gap-2">
       <p className="text-xs uppercase tracking-wider text-amber-100/50">

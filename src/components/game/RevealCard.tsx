@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import confetti from "canvas-confetti";
 import { Play, Pause } from "lucide-react";
 import type { RiffleTrack } from "@/lib/itunes";
@@ -20,22 +21,24 @@ type Props = {
 // iTunes preview clips are 30 seconds long. We cap reveal-page playback at
 // 16 seconds, the longest in-game clip, both to keep the UX consistent
 // with gameplay and to avoid streaming a longer-than-fair-use snippet.
-const PREVIEW_MAX_MS = 16_000;
+const PREVIEW_MAX_S = 16;
 
 export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "Next" }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const stopTimerRef = useRef<number | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const pathname = usePathname();
   const proxiedSrc = `/api/audio/${track.id}?src=${encodeURIComponent(track.previewUrl)}`;
-  const volume = useAudioStore((s) => s.volume);
-  const muted = useAudioStore((s) => s.muted);
 
-  useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    a.volume = volume;
-    a.muted = muted;
-  }, [volume, muted]);
+  // Drive playback through the global audio store so the floating bar
+  // and the on-card Listen button stay in sync. Without this they'd
+  // play two separate <audio> elements at the same time.
+  const registerAudio = useAudioStore((s) => s.registerAudio);
+  const globalPlay = useAudioStore((s) => s.globalPlay);
+  const globalPause = useAudioStore((s) => s.globalPause);
+  const isThisAudioActive = useAudioStore(
+    (s) => s.globalAudio === audioRef.current,
+  );
+  const globalPlaying = useAudioStore((s) => s.globalPlaying);
+  const playing = isThisAudioActive && globalPlaying;
 
   // Fire SFX + confetti once when the card appears.
   useEffect(() => {
@@ -47,41 +50,21 @@ export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "N
     }
   }, [correct]);
 
-  // Always tear down the playback timer if the card unmounts mid-clip.
-  useEffect(() => {
-    return () => {
-      if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
-    };
-  }, []);
-
-  function clearStopTimer() {
-    if (stopTimerRef.current) {
-      window.clearTimeout(stopTimerRef.current);
-      stopTimerRef.current = null;
-    }
-  }
-
   function togglePreview() {
     const a = audioRef.current;
     if (!a) return;
     if (playing) {
-      a.pause();
-      setPlaying(false);
-      clearStopTimer();
-    } else {
-      a.currentTime = 0;
-      a.play()
-        .then(() => {
-          setPlaying(true);
-          clearStopTimer();
-          stopTimerRef.current = window.setTimeout(() => {
-            a.pause();
-            setPlaying(false);
-            stopTimerRef.current = null;
-          }, PREVIEW_MAX_MS);
-        })
-        .catch(() => setPlaying(false));
+      globalPause();
+      return;
     }
+    // First play after the in-game AudioClip unmounted, or first play
+    // ever on this card. Register replaces the previously-tracked audio
+    // (pausing it first) and wires play/pause listeners that keep
+    // globalPlaying accurate.
+    if (!isThisAudioActive) {
+      registerAudio(a, pathname, PREVIEW_MAX_S, track.title, track.artist);
+    }
+    globalPlay();
   }
 
   return (
@@ -142,15 +125,9 @@ export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "N
           </button>
         </div>
 
-        <audio
-          ref={audioRef}
-          src={proxiedSrc}
-          preload="none"
-          onEnded={() => {
-            setPlaying(false);
-            clearStopTimer();
-          }}
-        />
+        {/* The audio store wires its own ended/pause/play listeners on
+            registerAudio, so this element only needs to expose the ref. */}
+        <audio ref={audioRef} src={proxiedSrc} preload="none" />
       </div>
 
       {onNext && (
