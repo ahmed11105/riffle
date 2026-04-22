@@ -14,7 +14,6 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
 import type { HintKind } from "@/lib/riffs/hints";
 import { useAudioStore } from "@/lib/store/audio";
-import { HousePromo } from "@/components/HousePromo";
 
 const LEVELS = [1, 2, 4, 8, 16] as const;
 const SOLO_PLAYED_KEY = "riffle:played:solo";
@@ -245,16 +244,13 @@ export function SoloGame() {
         </>
       )}
       {done && (
-        <>
-          <RevealCard
-            track={current}
-            correct={done.correct}
-            levelSolved={done.levelSolved}
-            onNext={next}
-            nextLabel="Next song"
-          />
-          <HousePromo />
-        </>
+        <RevealCard
+          track={current}
+          correct={done.correct}
+          levelSolved={done.levelSolved}
+          onNext={next}
+          nextLabel="Next song"
+        />
       )}
     </div>
   );

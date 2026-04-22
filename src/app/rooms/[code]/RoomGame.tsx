@@ -22,7 +22,6 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useAudioStore } from "@/lib/store/audio";
-import { HousePromo } from "@/components/HousePromo";
 import { usePhaseTimer } from "@/hooks/usePhaseTimer";
 import { CLIP_LEVELS, type ClipLevel } from "@/lib/game/wager";
 import type { HintKind } from "@/lib/riffs/hints";
@@ -726,7 +725,6 @@ export function RoomGame({ code }: { code: string }) {
                   {advancing ? "Starting…" : "Next round →"}
                 </button>
               )}
-              <HousePromo />
             </>
           ) : (
             <LoadingShell label="Revealing…" />
