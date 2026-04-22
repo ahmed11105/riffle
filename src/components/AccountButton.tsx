@@ -59,7 +59,7 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
   if (!user || isAnonymous) {
     return (
       <Link
-        href="/account"
+        href="/signin"
         aria-label="Sign in or create an account"
         className={
           floating

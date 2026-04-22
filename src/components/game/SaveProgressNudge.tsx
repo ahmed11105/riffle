@@ -25,7 +25,7 @@ export function SaveProgressNudge() {
       <p className="text-base font-black">{headline}</p>
       <p className="mt-1 text-sm">{sub}</p>
       <Link
-        href="/account"
+        href="/signin"
         className="mt-3 inline-flex items-center rounded-full border-4 border-stone-900 bg-stone-900 px-5 py-2 text-sm font-black text-amber-300 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
       >
         Save my progress →
