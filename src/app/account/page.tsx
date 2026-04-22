@@ -77,7 +77,7 @@ export default function AccountPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-4xl items-center justify-between">
+      <header className="flex w-full max-w-5xl items-center justify-between">
         <Link href="/">
           <Logo />
         </Link>
