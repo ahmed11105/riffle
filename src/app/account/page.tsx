@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pencil, Check, X } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { PRO_MONTHLY_GBP, PRO_PERKS } from "@/lib/riffs/pro";
+import { createClient } from "@/lib/supabase/client";
 
 function formatGbp(pence: number): string {
   return `£${(pence / 100).toFixed(2)}`;
@@ -102,15 +104,11 @@ export default function AccountPage() {
           <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
             Signed in
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-black">
-              {profile?.display_name ?? "Player"}
-            </h1>
-            {isPro && (
-              <span className="rounded-full border-2 border-stone-900 bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wider text-stone-900">
-                Pro
-              </span>
-            )}
+          <div className="mt-2">
+            <DisplayNameEditor
+              currentName={profile?.display_name ?? "Player"}
+              isPro={isPro}
+            />
           </div>
           {user?.email && (
             <p className="mt-2 text-sm text-stone-600">{user.email}</p>
@@ -187,6 +185,123 @@ export default function AccountPage() {
       </div>
       )}
     </main>
+  );
+}
+
+function DisplayNameEditor({
+  currentName,
+  isPro,
+}: {
+  currentName: string;
+  isPro: boolean;
+}) {
+  const { user, refreshProfile } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(currentName);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function start() {
+    setDraft(currentName);
+    setError(null);
+    setEditing(true);
+  }
+
+  function cancel() {
+    setEditing(false);
+    setError(null);
+  }
+
+  async function save() {
+    const next = draft.trim();
+    if (!next) {
+      setError("Name can't be empty.");
+      return;
+    }
+    if (next.length > 24) {
+      setError("Max 24 characters.");
+      return;
+    }
+    if (next === currentName) {
+      setEditing(false);
+      return;
+    }
+    if (!user) return;
+    setSaving(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: err } = await supabase
+      .from("profiles")
+      .update({ display_name: next })
+      .eq("id", user.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    await refreshProfile();
+    setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-black">{currentName}</h1>
+        {isPro && (
+          <span className="rounded-full border-2 border-stone-900 bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wider text-stone-900">
+            Pro
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={start}
+          aria-label="Edit display name"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full border-2 border-stone-900 bg-stone-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] hover:bg-amber-200 active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+        >
+          <Pencil className="h-3 w-3" /> Edit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={24}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") cancel();
+          }}
+          className="min-w-0 flex-1 rounded-full border-4 border-stone-900 bg-stone-100 px-4 py-2 text-2xl font-black text-stone-900 focus:outline-none focus:ring-4 focus:ring-amber-300"
+        />
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          aria-label="Save"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={saving}
+          aria-label="Cancel"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-200 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {error && (
+        <p className="text-xs font-bold text-rose-700">{error}</p>
+      )}
+    </div>
   );
 }
 

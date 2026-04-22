@@ -147,7 +147,7 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
             onClick={() => setOpen(false)}
             className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-amber-200"
           >
-            <UserIcon className="h-4 w-4" /> Your account
+            <UserIcon className="h-4 w-4" /> Profile
           </Link>
 
           <button
