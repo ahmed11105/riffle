@@ -6,17 +6,9 @@ import {
 } from "obscenity";
 import { createClient } from "@/lib/supabase/server";
 
-// Server-side rename. The browser supabase-js client routes through
-// the navigator.locks Web Lock, which can hang in iOS Safari /
-// incognito and stall the rename indefinitely. Calling the RPC
-// server-to-server via cookie-auth has no Web Lock involvement so it
-// completes promptly.
-
-// Profanity check happens here (not in the client) so it's tamper-
-// proof. obscenity's englishDataset covers the standard slurs +
-// cusses, and englishRecommendedTransformers normalises leetspeak,
-// spacing, and unicode tricks (so "5h1t", "s h i t", "ʂ𝒽𝒾𝓉" are
-// all caught).
+// Profanity filter runs server-side so it's tamper-proof.
+// englishRecommendedTransformers normalises leetspeak / spacing /
+// unicode lookalikes — "5h1t", "s h i t", "ʂ𝒽𝒾𝓉" all match.
 const profanityMatcher = new RegExpMatcher({
   ...englishDataset.build(),
   ...englishRecommendedTransformers,
@@ -24,17 +16,17 @@ const profanityMatcher = new RegExpMatcher({
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { name?: string };
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
-  }
-
   const name = (body.name ?? "").trim();
+
   if (name && profanityMatcher.hasMatch(name)) {
     return NextResponse.json({ ok: false, error: "inappropriate_name" });
   }
 
+  // Skip an auth.getUser() round-trip — the RPC itself returns
+  // not_authenticated via auth.uid() when the cookie is missing or
+  // expired, and supabase-ssr forwards the JWT to the RPC call
+  // automatically.
+  const supabase = await createClient();
   const { data, error } = await supabase.rpc("set_display_name", { p_name: name });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
