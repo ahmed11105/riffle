@@ -11,6 +11,7 @@ type Props = {
   playing: boolean;
   onToggle: () => void;
   onEnded: () => void;
+  trackId?: string;
   trackTitle?: string;
   trackArtist?: string;
 };
@@ -21,6 +22,7 @@ export function AudioClip({
   playing,
   onToggle,
   onEnded,
+  trackId,
   trackTitle,
   trackArtist,
 }: Props) {
@@ -78,7 +80,7 @@ export function AudioClip({
         a.currentTime = 0;
       } catch {}
       a.play().catch(() => onEndedRef.current());
-      registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist);
+      registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist, trackId);
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
       stopTimerRef.current = window.setTimeout(() => {
         a.pause();
@@ -91,7 +93,7 @@ export function AudioClip({
     return () => {
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
     };
-  }, [playing, maxSeconds, src, registerAudio, pathname, trackTitle, trackArtist]);
+  }, [playing, maxSeconds, src, registerAudio, pathname, trackId, trackTitle, trackArtist]);
 
   return (
     <div className="flex flex-col items-center gap-3">

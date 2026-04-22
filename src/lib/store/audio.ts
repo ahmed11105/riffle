@@ -14,6 +14,7 @@ type AudioState = {
   // the page that started playback.
   globalAudio: HTMLAudioElement | null;
   globalOriginPath: string | null;
+  globalTrackId: string | null;
   globalTrackTitle: string | null;
   globalTrackArtist: string | null;
   globalPlaying: boolean;
@@ -28,6 +29,7 @@ type AudioState = {
     maxSeconds?: number,
     title?: string,
     artist?: string,
+    trackId?: string,
   ) => void;
   updateMaxSeconds: (maxSeconds: number | null) => void;
   // Replace just the title/artist on an already-registered audio. Used
@@ -108,12 +110,12 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   // Global playback state
   globalAudio: null,
   globalOriginPath: null,
+  globalTrackId: null,
   globalTrackTitle: null,
   globalTrackArtist: null,
   globalPlaying: false,
   globalMaxSeconds: null,
-  registerAudio: (el, originPath, maxSeconds, title, artist) => {
-    // Stop any previously registered audio.
+  registerAudio: (el, originPath, maxSeconds, title, artist, trackId) => {
     const prev = get().globalAudio;
     if (prev && prev !== el) {
       prev.pause();
@@ -134,6 +136,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     set({
       globalAudio: el,
       globalOriginPath: originPath,
+      globalTrackId: trackId ?? null,
       globalTrackTitle: title ?? null,
       globalTrackArtist: artist ?? null,
       globalMaxSeconds: maxSeconds ?? null,
@@ -154,6 +157,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     set({
       globalAudio: null,
       globalOriginPath: null,
+      globalTrackId: null,
       globalTrackTitle: null,
       globalTrackArtist: null,
       globalMaxSeconds: null,

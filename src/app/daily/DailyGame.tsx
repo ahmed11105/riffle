@@ -17,57 +17,15 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
 
-const LEVELS = [1, 2, 4, 8, 16] as const;
-type Guess = { kind: "correct" | "wrong" | "skipped"; value: string };
-
-// Persist daily progress in localStorage so a refresh can't rewind the
-// game: finished reveal state stays revealed, and an in-progress session
-// resumes at the clip level the player had reached. The key is scoped by
-// track id so a new track (= new day) naturally gets a fresh session.
-type FinishedState = {
-  correct: boolean;
-  levelSolved?: number;
-  // Guesses kept for the share grid. Older saves without this field
-  // still work — the grid just renders solid-yellow placeholders.
-  guesses?: Guess[];
-};
-type SessionState = { levelIdx: number; guesses: Guess[] };
-const DONE_PREFIX = "riffle:daily:done:";
-const SESSION_PREFIX = "riffle:daily:session:";
-function loadFinished(trackId: string): FinishedState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(DONE_PREFIX + trackId);
-    if (!raw) return null;
-    return JSON.parse(raw) as FinishedState;
-  } catch {
-    return null;
-  }
-}
-function saveFinished(trackId: string, state: FinishedState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(DONE_PREFIX + trackId, JSON.stringify(state));
-    // In-progress state is no longer needed once the game is done.
-    window.localStorage.removeItem(SESSION_PREFIX + trackId);
-  } catch {}
-}
-function loadSession(trackId: string): SessionState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_PREFIX + trackId);
-    if (!raw) return null;
-    return JSON.parse(raw) as SessionState;
-  } catch {
-    return null;
-  }
-}
-function saveSession(trackId: string, state: SessionState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(SESSION_PREFIX + trackId, JSON.stringify(state));
-  } catch {}
-}
+import {
+  LEVELS,
+  type Guess,
+  type FinishedState,
+  loadFinished,
+  saveFinished,
+  loadSession,
+  saveSession,
+} from "@/lib/daily/session";
 
 export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   const [levelIdx, setLevelIdx] = useState(0);
@@ -199,6 +157,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             src={proxiedSrc}
             maxSeconds={current}
             playing={playing}
+            trackId={track.id}
             onToggle={() => setPlaying((p) => !p)}
             onEnded={() => setPlaying(false)}
           />
