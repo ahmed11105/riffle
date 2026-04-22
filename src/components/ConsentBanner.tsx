@@ -44,7 +44,7 @@ export function ConsentBanner() {
             onClick={() => decide("denied")}
             className="rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-2 text-xs font-black text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
           >
-            Decline analytics
+            Reject all
           </button>
           <button
             type="button"
