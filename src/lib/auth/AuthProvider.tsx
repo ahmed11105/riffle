@@ -14,6 +14,9 @@ import { createClient } from "@/lib/supabase/client";
 export type Profile = {
   id: string;
   display_name: string;
+  // Riot/Discord-style 4-digit disambiguator. Combined with
+  // display_name forms a globally unique handle: "Alex#0042".
+  tag: number | null;
   avatar_url: string | null;
   coin_balance: number;
   xp: number;
@@ -58,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, display_name, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status",
+          "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status",
         )
         .eq("id", userId)
         .maybeSingle();

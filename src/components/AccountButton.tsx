@@ -73,6 +73,8 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
   }
 
   const displayName = profile?.display_name?.trim() || "Player";
+  const tag = profile?.tag;
+  const tagSuffix = tag != null ? `#${tag.toString().padStart(4, "0")}` : "";
   const email = user.email ?? null;
   const initial = (displayName || email || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -135,7 +137,14 @@ export function AccountButton({ variant = "header" }: { variant?: "header" | "fl
           className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 overflow-hidden rounded-2xl border-4 border-stone-900 bg-stone-50 text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)]"
         >
           <div className="border-b-2 border-stone-200 px-4 py-3">
-            <p className="truncate text-sm font-black">{displayName}</p>
+            <p className="truncate text-sm font-black">
+              {displayName}
+              {tagSuffix && (
+                <span className="ml-1 font-mono text-xs font-bold text-stone-400">
+                  {tagSuffix}
+                </span>
+              )}
+            </p>
             {email && (
               <p className="mt-0.5 truncate text-xs text-stone-500">{email}</p>
             )}

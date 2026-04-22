@@ -44,6 +44,7 @@ export default function AccountPage() {
           <div className="mt-2">
             <DisplayNameEditor
               currentName={profile?.display_name ?? "Player"}
+              currentTag={profile?.tag}
               isPro={isPro}
             />
           </div>
@@ -65,11 +66,20 @@ export default function AccountPage() {
   );
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  not_authenticated: "Sign in again to edit your name.",
+  empty: "Name can't be empty.",
+  too_long: "Max 24 characters.",
+  name_full: "All tag slots for that name are taken — try a small variation.",
+};
+
 function DisplayNameEditor({
   currentName,
+  currentTag,
   isPro,
 }: {
   currentName: string;
+  currentTag: number | null | undefined;
   isPro: boolean;
 }) {
   const { user, refreshProfile } = useAuth();
@@ -95,35 +105,50 @@ function DisplayNameEditor({
       setError("Name can't be empty.");
       return;
     }
-    if (next.length > 24) {
-      setError("Max 24 characters.");
-      return;
-    }
-    if (next === currentName) {
-      setEditing(false);
-      return;
-    }
     if (!user) return;
     setSaving(true);
     setError(null);
-    const supabase = createClient();
-    const { error: err } = await supabase
-      .from("profiles")
-      .update({ display_name: next })
-      .eq("id", user.id);
-    setSaving(false);
-    if (err) {
-      setError(err.message);
-      return;
+    try {
+      const supabase = createClient();
+      // Race against a 5s timeout so the button can never hang.
+      const rpc = supabase.rpc("set_display_name", { p_name: next });
+      const timeout = new Promise<{ data: null; error: { message: string } }>(
+        (resolve) =>
+          setTimeout(
+            () => resolve({ data: null, error: { message: "Request timed out, try again." } }),
+            5000,
+          ),
+      );
+      const { data, error: err } = await Promise.race([rpc, timeout]);
+      if (err) {
+        setError(err.message);
+        return;
+      }
+      const result = data as { ok?: boolean; error?: string } | null;
+      if (!result?.ok) {
+        setError(ERROR_MESSAGES[result?.error ?? ""] ?? "Couldn't save. Try again.");
+        return;
+      }
+      await refreshProfile();
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't save. Try again.");
+    } finally {
+      setSaving(false);
     }
-    await refreshProfile();
-    setEditing(false);
   }
 
   if (!editing) {
     return (
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-black">{currentName}</h1>
+        <div className="flex items-baseline gap-1">
+          <h1 className="text-3xl font-black">{currentName}</h1>
+          {currentTag != null && (
+            <span className="font-mono text-base font-bold text-stone-400">
+              #{currentTag.toString().padStart(4, "0")}
+            </span>
+          )}
+        </div>
         {isPro && (
           <span className="rounded-full border-2 border-stone-900 bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wider text-stone-900">
             Pro
@@ -175,6 +200,10 @@ function DisplayNameEditor({
           <X className="h-4 w-4" />
         </button>
       </div>
+      <p className="text-xs text-stone-500">
+        Anyone can pick the same name — your <span className="font-mono">#tag</span>{" "}
+        will be assigned automatically to keep your handle unique.
+      </p>
       {error && (
         <p className="text-xs font-bold text-rose-700">{error}</p>
       )}
