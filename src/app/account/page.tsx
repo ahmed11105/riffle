@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, Loader2 } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -70,6 +70,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   empty: "Name can't be empty.",
   too_long: "Max 24 characters.",
   name_full: "All tag slots for that name are taken — try a small variation.",
+  inappropriate_name: "That name isn't allowed. Try another.",
 };
 
 function DisplayNameEditor({
@@ -174,31 +175,45 @@ function DisplayNameEditor({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={24}
+          disabled={saving}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter") save();
             if (e.key === "Escape") cancel();
           }}
-          className="min-w-0 flex-1 rounded-full border-4 border-stone-900 bg-stone-100 px-4 py-2 text-2xl font-black text-stone-900 focus:outline-none focus:ring-4 focus:ring-amber-300"
+          className="min-w-0 flex-1 rounded-full border-4 border-stone-900 bg-stone-100 px-4 py-2 text-2xl font-black text-stone-900 focus:outline-none focus:ring-4 focus:ring-amber-300 disabled:opacity-70"
         />
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          aria-label="Save"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-        >
-          <Check className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={cancel}
-          disabled={saving}
-          aria-label="Cancel"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-200 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {saving ? (
+          // While saving, replace the action pair with one spinner
+          // tile so the user has a clear "working" signal instead of
+          // a greyed-out tick.
+          <div
+            aria-live="polite"
+            aria-label="Saving"
+            className="inline-flex h-10 w-[5.25rem] items-center justify-center rounded-full border-2 border-stone-900 bg-stone-100 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={save}
+              aria-label="Save"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              aria-label="Cancel"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-200 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </>
+        )}
       </div>
       <p className="text-xs text-stone-500">
         Anyone can pick the same name — your <span className="font-mono">#tag</span>{" "}
