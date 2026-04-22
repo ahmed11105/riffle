@@ -8,6 +8,7 @@ import { Logo } from "@/components/branding/Logo";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
+import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
 import { WagerPanel } from "@/components/game/WagerPanel";
 import { HintPanel } from "@/components/game/HintPanel";
@@ -677,16 +678,21 @@ export function RoomGame({ code }: { code: string }) {
                 Playing the first {LEVELS[levelIdx]} second
                 {LEVELS[levelIdx] === 1 ? "" : "s"}
               </p>
-              <GuessInput
-                onGuess={handleGuess}
-                onSkip={handleSkip}
-                currentLevel={LEVELS[levelIdx]}
-                disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
-                artistFilter={(room.artist_query ?? "")
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean)}
-              />
+              <div className="flex w-full max-w-md flex-col gap-1">
+                <div className="self-start">
+                  <VolumeControl />
+                </div>
+                <GuessInput
+                  onGuess={handleGuess}
+                  onSkip={handleSkip}
+                  currentLevel={LEVELS[levelIdx]}
+                  disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
+                  artistFilter={(room.artist_query ?? "")
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)}
+                />
+              </div>
               <HintPanel
                 track={track}
                 revealed={hints}

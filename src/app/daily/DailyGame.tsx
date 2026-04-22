@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
+import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
 import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
 import { HousePromo } from "@/components/HousePromo";
@@ -205,7 +206,12 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           <p className="text-xs text-amber-100/60">
             Playing the first {current} second{current === 1 ? "" : "s"}
           </p>
-          <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={current} />
+          <div className="flex w-full max-w-md flex-col gap-1">
+            <div className="self-start">
+              <VolumeControl />
+            </div>
+            <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={current} />
+          </div>
         </>
       )}
       {done && (

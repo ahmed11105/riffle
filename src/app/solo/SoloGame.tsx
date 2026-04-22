@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
+import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
 import { HintPanel } from "@/components/game/HintPanel";
 import { RiffsBadge } from "@/components/RiffsBadge";
@@ -238,7 +239,12 @@ export function SoloGame() {
             Playing the first {LEVELS[levelIdx]} second
             {LEVELS[levelIdx] === 1 ? "" : "s"}
           </p>
-          <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={LEVELS[levelIdx]} />
+          <div className="flex w-full max-w-md flex-col gap-1">
+            <div className="self-start">
+              <VolumeControl />
+            </div>
+            <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={LEVELS[levelIdx]} />
+          </div>
           <HintPanel
             track={current}
             revealed={hints}

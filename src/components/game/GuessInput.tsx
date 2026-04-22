@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Flag } from "lucide-react";
 import type { RiffleTrack } from "@/lib/itunes";
-import { VolumeControl } from "@/components/VolumeControl";
 
 const LEVELS = [1, 2, 4, 8, 16] as const;
 type Level = (typeof LEVELS)[number];
@@ -81,10 +80,11 @@ export function GuessInput({ onGuess, onSkip, disabled, artistFilter, currentLev
         }}
         className="flex w-full items-center gap-2"
       >
-        <VolumeControl />
         {/* The whole input + actions live inside a single dark pill so
             it reads as one control. Focus styling lives on the wrapper
-            (focus-within), not the bare input — matches the mockup. */}
+            (focus-within), not the bare input — matches the mockup.
+            VolumeControl moved out of the input row; render it above
+            the GuessInput in the parent. */}
         <div
           className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-full border-2 bg-stone-900 py-1.5 pl-2 pr-1.5 transition focus-within:ring-4 focus-within:ring-amber-300/40 ${
             disabled
