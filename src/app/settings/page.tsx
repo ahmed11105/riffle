@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -198,22 +198,31 @@ function DangerZone({ signOut }: { signOut: () => Promise<void> }) {
               type="button"
               onClick={deleteAccount}
               disabled={deleting || confirmText !== "DELETE"}
-              className="rounded-full border-2 border-stone-900 bg-rose-500 px-5 py-2 text-sm font-black text-stone-50 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
+              aria-live="polite"
+              className="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-full border-2 border-stone-900 bg-rose-500 px-5 py-2 text-sm font-black text-stone-50 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
             >
-              {deleting ? "Deleting…" : "Permanently delete"}
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-rose-100" />
+                  Deleting…
+                </>
+              ) : (
+                "Permanently delete"
+              )}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setConfirming(false);
-                setConfirmText("");
-                setError(null);
-              }}
-              disabled={deleting}
-              className="rounded-full border-2 border-stone-900 bg-stone-100 px-5 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-            >
-              Cancel
-            </button>
+            {!deleting && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false);
+                  setConfirmText("");
+                  setError(null);
+                }}
+                className="rounded-full border-2 border-stone-900 bg-stone-100 px-5 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+              >
+                Cancel
+              </button>
+            )}
           </div>
           {error && (
             <p className="text-sm font-bold text-rose-700">{error}</p>
