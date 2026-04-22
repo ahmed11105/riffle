@@ -8,7 +8,6 @@ import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
-import { createClient } from "@/lib/supabase/client";
 
 export default function AccountPage() {
   const { user, profile, streak, isAnonymous, isPro, loading } = useAuth();
@@ -109,30 +108,31 @@ function DisplayNameEditor({
     setSaving(true);
     setError(null);
     try {
-      const supabase = createClient();
-      // Race against a 5s timeout so the button can never hang.
-      const rpc = supabase.rpc("set_display_name", { p_name: next });
-      const timeout = new Promise<{ data: null; error: { message: string } }>(
-        (resolve) =>
-          setTimeout(
-            () => resolve({ data: null, error: { message: "Request timed out, try again." } }),
-            5000,
-          ),
-      );
-      const { data, error: err } = await Promise.race([rpc, timeout]);
-      if (err) {
-        setError(err.message);
-        return;
+      // Server-side route avoids the navigator.locks Web Lock that
+      // supabase-js uses in the browser (which can hang on iOS Safari).
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      let result: { ok?: boolean; error?: string } | null = null;
+      try {
+        const res = await fetch("/api/account/display-name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: next }),
+          signal: ctrl.signal,
+        });
+        result = (await res.json()) as { ok?: boolean; error?: string };
+      } finally {
+        clearTimeout(timer);
       }
-      const result = data as { ok?: boolean; error?: string } | null;
       if (!result?.ok) {
-        setError(ERROR_MESSAGES[result?.error ?? ""] ?? "Couldn't save. Try again.");
+        setError(ERROR_MESSAGES[result?.error ?? ""] ?? result?.error ?? "Couldn't save. Try again.");
         return;
       }
       await refreshProfile();
       setEditing(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save. Try again.");
+      const msg = e instanceof Error ? e.message : "Couldn't save. Try again.";
+      setError(msg.includes("aborted") ? "Request timed out, try again." : msg);
     } finally {
       setSaving(false);
     }
