@@ -20,6 +20,7 @@ import { loadLocalPlayer, saveLocalPlayer, PHASE_DURATIONS, type GuessRecord } f
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
+import { useAudioStore } from "@/lib/store/audio";
 import { usePhaseTimer } from "@/hooks/usePhaseTimer";
 import { CLIP_LEVELS, type ClipLevel } from "@/lib/game/wager";
 import type { HintKind } from "@/lib/riffs/hints";
@@ -46,6 +47,16 @@ export function RoomGame({ code }: { code: string }) {
   const [playing, setPlaying] = useState(false);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+
+  // Reveal the title on the floating audio bar once the room enters the
+  // reveal phase, so navigating away no longer says "Mystery track".
+  const setGlobalTrackInfo = useAudioStore((s) => s.setGlobalTrackInfo);
+  useEffect(() => {
+    if (!track) return;
+    if (room?.status === "reveal" || room?.status === "finished") {
+      setGlobalTrackInfo(track.title, track.artist);
+    }
+  }, [room?.status, track, setGlobalTrackInfo]);
 
   // Local drafts of lobby config for the host, synced down from room on load.
   const [draftGenres, setDraftGenres] = useState<string[]>([]);

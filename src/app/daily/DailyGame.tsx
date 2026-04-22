@@ -15,6 +15,7 @@ import { deobfuscateTitle } from "@/lib/obfuscate";
 import { useAdminMode, resetDailyProgress } from "@/lib/admin";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { useAudioStore } from "@/lib/store/audio";
 
 const LEVELS = [1, 2, 4, 8, 16] as const;
 type Guess = { kind: "correct" | "wrong" | "skipped"; value: string };
@@ -97,6 +98,15 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
       setGuesses(session.guesses);
     }
   }, [track.id]);
+
+  // Once the answer is revealed, push the real title/artist into the
+  // global audio store so the floating playback bar stops saying
+  // "Mystery track" after the player navigates away from /daily.
+  const setGlobalTrackInfo = useAudioStore((s) => s.setGlobalTrackInfo);
+  useEffect(() => {
+    if (!done) return;
+    setGlobalTrackInfo(realTitle, track.artist);
+  }, [done, realTitle, track.artist, setGlobalTrackInfo]);
 
   // Persist the result the first time we transition to `done`.
   // Also write the result + streak update to Supabase. Best-effort, the

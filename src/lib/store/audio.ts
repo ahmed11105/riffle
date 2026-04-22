@@ -30,6 +30,10 @@ type AudioState = {
     artist?: string,
   ) => void;
   updateMaxSeconds: (maxSeconds: number | null) => void;
+  // Replace just the title/artist on an already-registered audio. Used
+  // when the game reveals the track so the floating bar can stop saying
+  // "Mystery track" after the player has finished guessing.
+  setGlobalTrackInfo: (title: string | null, artist: string | null) => void;
   unregisterAudio: () => void;
   globalPlay: () => void;
   globalPause: () => void;
@@ -138,6 +142,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   },
   updateMaxSeconds: (maxSeconds) => {
     set({ globalMaxSeconds: maxSeconds });
+  },
+  setGlobalTrackInfo: (title, artist) => {
+    if (!get().globalAudio) return;
+    set({ globalTrackTitle: title, globalTrackArtist: artist });
   },
   unregisterAudio: () => {
     const el = get().globalAudio;
