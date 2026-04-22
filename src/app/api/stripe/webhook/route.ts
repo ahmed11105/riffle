@@ -84,12 +84,28 @@ const handleCheckoutSessionCompleted: EventHandler = async (event, admin, stripe
   return { ok: true };
 };
 
+async function resolveUserId(
+  sub: Stripe.Subscription,
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<string | null> {
+  if (sub.metadata?.user_id) return sub.metadata.user_id;
+  // Portal-initiated changes can drop metadata. Fall back to the customer
+  // mapping we stored on grant_pro.
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  if (!customerId) return null;
+  const { data } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 const handleSubscriptionUpdated: EventHandler = async (event, admin) => {
   const sub = event.data.object as Stripe.Subscription;
-  const userId = sub.metadata?.user_id;
+  const userId = await resolveUserId(sub, admin);
   if (!userId) {
-    // Older subscriptions might not have metadata. We could look up via
-    // stripe_customer_id, but for v1 we silently skip.
+    console.warn("[stripe webhook] subscription.updated: no user mapping", sub.id);
     return { ok: true };
   }
 
@@ -131,8 +147,11 @@ const handleSubscriptionUpdated: EventHandler = async (event, admin) => {
 
 const handleSubscriptionDeleted: EventHandler = async (event, admin) => {
   const sub = event.data.object as Stripe.Subscription;
-  const userId = sub.metadata?.user_id;
-  if (!userId) return { ok: true };
+  const userId = await resolveUserId(sub, admin);
+  if (!userId) {
+    console.warn("[stripe webhook] subscription.deleted: no user mapping", sub.id);
+    return { ok: true };
+  }
 
   const { error } = await admin.rpc("revoke_pro", {
     p_user: userId,

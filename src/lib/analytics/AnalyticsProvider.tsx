@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, createContext, useContext, useCallback } from "react";
+import { useEffect, useState, createContext, useContext, useCallback } from "react";
 import posthog from "posthog-js";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { EventName } from "./events";
+import { getConsent, onConsentChange } from "./consent";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
@@ -36,9 +37,20 @@ const AnalyticsContext = createContext<AnalyticsContextValue>({
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { user, isAnonymous } = useAuth();
+  const [consentTick, setConsentTick] = useState(0);
 
   useEffect(() => {
-    initPostHog();
+    if (getConsent() === "granted") initPostHog();
+    return onConsentChange((status) => {
+      if (status === "granted") {
+        initPostHog();
+      } else if (initialized) {
+        // User revoked: stop sending and forget the person.
+        posthog.opt_out_capturing();
+        posthog.reset();
+      }
+      setConsentTick((t) => t + 1);
+    });
   }, []);
 
   // Identify the user once we know who they are. For anonymous users we
@@ -54,7 +66,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         email: user.email,
       });
     }
-  }, [user, isAnonymous]);
+  }, [user, isAnonymous, consentTick]);
 
   const track = useCallback(
     (event: EventName, props?: Record<string, unknown>) => {

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: "How Riffle collects, uses, and protects your data.",
 };
 
-const LAST_UPDATED = "18 April 2026";
+const LAST_UPDATED = "22 April 2026";
 
 export default function PrivacyPage() {
   return (
@@ -79,18 +79,43 @@ export default function PrivacyPage() {
           Apple may log these requests independently.
         </li>
         <li>
+          <strong>Cloudflare</strong> (DNS and email routing), routes traffic
+          to riffle.cc and forwards email sent to addresses ending
+          @riffle.cc to our private inbox. Cloudflare may log connection
+          metadata as part of providing the service.
+        </li>
+        <li>
           <strong>PostHog</strong> (analytics) and <strong>Sentry</strong>{" "}
           (error reporting), usage and crash data, anonymised where possible.
+          Both are EU-hosted.
         </li>
       </ul>
 
       <h2 className="mt-8 text-2xl font-black">Cookies and local storage</h2>
       <p>
-        We use cookies for authentication sessions and to remember your
-        preferences. We use browser local storage to save your daily progress,
-        played-songs history, and onboarding state. You can clear these at any
-        time from your browser settings.
+        We use a small number of cookies and browser-storage entries:
       </p>
+      <ul className="ml-6 list-disc space-y-2">
+        <li>
+          <strong>Strictly necessary</strong>: a sign-in cookie (Supabase),
+          a host-fingerprint cookie for friends rooms, and local-storage
+          entries for daily progress, onboarding state, and played-songs
+          history. These are required for the game to work and are set
+          without consent.
+        </li>
+        <li>
+          <strong>Analytics (optional)</strong>: PostHog cookies + local
+          storage for product analytics. These are only set if you choose
+          &ldquo;Accept all&rdquo; on the consent banner shown on first
+          visit. You can change your mind at any time by clearing site data
+          and reloading.
+        </li>
+        <li>
+          <strong>Error monitoring</strong>: Sentry receives crash reports
+          when something breaks. It does not set marketing cookies and runs
+          as a strictly-necessary service-monitoring tool.
+        </li>
+      </ul>
 
       <h2 className="mt-8 text-2xl font-black">Your rights</h2>
       <p>

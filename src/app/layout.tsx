@@ -10,6 +10,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
 import { Onboarding } from "@/components/Onboarding";
 import { MobileNav } from "@/components/MobileNav";
+import { ConsentBanner } from "@/components/ConsentBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -86,6 +87,7 @@ export default function RootLayout({
               <GlobalAudioBar />
             </Suspense>
             <Onboarding />
+            <ConsentBanner />
           </AnalyticsProvider>
         </AuthProvider>
       </body>

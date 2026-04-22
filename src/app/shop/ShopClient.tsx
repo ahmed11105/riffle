@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
@@ -45,6 +46,7 @@ export function ShopClient({
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
+  const [ageOk, setAgeOk] = useState(false);
   const [unlockingSlug, setUnlockingSlug] = useState<string | null>(null);
   const [unlockedNow, setUnlockedNow] = useState<Set<string>>(new Set());
   const [adState, setAdState] = useState<
@@ -141,6 +143,10 @@ export function ShopClient({
     setEmailMsg(null);
     if (!email.includes("@")) {
       setEmailMsg("Enter a valid email.");
+      return;
+    }
+    if (!ageOk) {
+      setEmailMsg("Please confirm you're 13 or older.");
       return;
     }
     track(EVENTS.SIGNUP_STARTED, { method: "magic_link" });
@@ -451,6 +457,26 @@ export function ShopClient({
               Send link
             </button>
           </div>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-stone-600">
+            <input
+              type="checkbox"
+              checked={ageOk}
+              onChange={(e) => setAgeOk(e.target.checked)}
+              className="mt-0.5 h-4 w-4 cursor-pointer accent-amber-500"
+            />
+            <span>
+              I confirm I&rsquo;m at least 13 years old (16 in the EU/UK) and
+              accept the{" "}
+              <Link href="/terms" className="font-bold text-amber-700 underline">
+                terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="font-bold text-amber-700 underline">
+                privacy policy
+              </Link>
+              .
+            </span>
+          </label>
           {emailMsg && (
             <p className="mt-2 text-sm font-bold text-stone-700">{emailMsg}</p>
           )}
