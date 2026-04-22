@@ -15,7 +15,7 @@ import { sfxSkip } from "@/lib/sfx";
 import type { HintKind } from "@/lib/riffs/hints";
 import { useAudioStore } from "@/lib/store/audio";
 
-const LEVELS = [1, 2, 4, 8, 16] as const;
+import { LEVELS } from "@/lib/game/levels";
 const SOLO_PLAYED_KEY = "riffle:played:solo";
 
 // Track IDs the player has already heard in solo mode. Persisted in

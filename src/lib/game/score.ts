@@ -3,11 +3,12 @@
 import { CLIP_LEVELS, type ClipLevel } from "./wager";
 
 const LEVEL_POINTS: Record<ClipLevel, number> = {
+  0.5: 1200,
   1: 1000,
   2: 750,
   4: 500,
-  8: 300,
-  16: 150,
+  7: 300,
+  10: 150,
 };
 
 export function scoreFor(level: ClipLevel, timeMs: number): number {

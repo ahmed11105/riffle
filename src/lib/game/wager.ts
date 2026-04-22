@@ -4,15 +4,20 @@
 // longer, they fall back to the next lower multiplier (1x minimum). Wrong
 // guess or timeout → lose the stake.
 
-export const CLIP_LEVELS = [1, 2, 4, 8, 16] as const;
+import { LEVELS } from "@/lib/game/levels";
+
+export const CLIP_LEVELS = LEVELS;
 export type ClipLevel = (typeof CLIP_LEVELS)[number];
 
+// Higher payout for committing to a harder (shorter) level.
+// 0.5s = 6x (elite tier), 10s = 1x (safe tier).
 export const LENGTH_MULTIPLIER: Record<ClipLevel, number> = {
-  1: 5,
-  2: 3,
-  4: 2,
-  8: 1.5,
-  16: 1,
+  0.5: 6,
+  1: 4,
+  2: 2.5,
+  4: 1.75,
+  7: 1.25,
+  10: 1,
 };
 
 export function multiplierForLevel(level: ClipLevel): number {

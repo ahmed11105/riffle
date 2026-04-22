@@ -82,7 +82,10 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         p_correct: done.correct,
         p_clip_level: done.levelSolved ?? null,
         p_time_ms: 0,
-        p_score: done.correct ? Math.max(0, 100 - LEVELS.indexOf(done.levelSolved as (typeof LEVELS)[number]) * 20) : 0,
+        // 6 levels: 100, 84, 68, 52, 36, 20.
+        p_score: done.correct
+          ? Math.max(20, 100 - LEVELS.indexOf(done.levelSolved as (typeof LEVELS)[number]) * 16)
+          : 0,
       })
       .then(({ error }) => {
         if (error) {
@@ -176,9 +179,9 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
               guesses: (done.guesses ?? guesses).map((g) => g.kind),
             }}
           />
-          <SaveProgressNudge />
           <NextDailyCountdown />
           <KeepPlayingCTA />
+          <SaveProgressNudge />
         </>
       )}
     </div>

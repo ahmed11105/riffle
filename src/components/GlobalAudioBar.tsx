@@ -9,6 +9,7 @@ import {
   saveSession,
   saveFinished,
   type Guess,
+  type Level,
 } from "@/lib/daily/session";
 import { sfxSkip } from "@/lib/sfx";
 
@@ -36,7 +37,7 @@ export function GlobalAudioBar() {
   if (globalOriginPath && pathname === globalOriginPath) return null;
 
   const currentSeconds = globalMaxSeconds ?? 0;
-  const currentIdx = LEVELS.indexOf(currentSeconds as 1 | 2 | 4 | 8 | 16);
+  const currentIdx = LEVELS.indexOf(currentSeconds as Level);
   const isFinalLevel = currentIdx === LEVELS.length - 1;
   const nextDiff = currentIdx >= 0 && !isFinalLevel ? LEVELS[currentIdx + 1] - LEVELS[currentIdx] : null;
   const dailyContext = globalOriginPath === "/daily" && !!globalTrackId;

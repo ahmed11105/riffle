@@ -26,7 +26,7 @@ import { usePhaseTimer } from "@/hooks/usePhaseTimer";
 import { CLIP_LEVELS, type ClipLevel } from "@/lib/game/wager";
 import type { HintKind } from "@/lib/riffs/hints";
 
-const LEVELS = [1, 2, 4, 8, 16] as const;
+import { LEVELS } from "@/lib/game/levels";
 // Per-clip-level countdown in seconds. Each level gets its own timer that
 // resets every time the shared level advances. Levels start at 10s for the
 // first clip and grow by 2s per step, so 10/12/14/16/18 across 1s..16s.

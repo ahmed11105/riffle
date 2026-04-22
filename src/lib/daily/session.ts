@@ -3,6 +3,9 @@
 // remote control), so a skip from the bar updates the same state
 // that DailyGame restores on remount.
 
+import { LEVELS, type Level } from "@/lib/game/levels";
+export { LEVELS, type Level };
+
 export type Guess = {
   kind: "correct" | "wrong" | "skipped";
   value: string;
@@ -14,11 +17,10 @@ export type FinishedState = {
 };
 export type SessionState = { levelIdx: number; guesses: Guess[] };
 
-export const LEVELS = [1, 2, 4, 8, 16] as const;
-export type Level = (typeof LEVELS)[number];
-
-const DONE_PREFIX = "riffle:daily:done:";
-const SESSION_PREFIX = "riffle:daily:session:";
+// v2 prefix bumps after the level-ladder change so old sessions
+// (which point at the wrong level indices) are abandoned cleanly.
+const DONE_PREFIX = "riffle:daily:done:v2:";
+const SESSION_PREFIX = "riffle:daily:session:v2:";
 
 export function loadFinished(trackId: string): FinishedState | null {
   if (typeof window === "undefined") return null;

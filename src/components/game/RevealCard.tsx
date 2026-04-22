@@ -27,7 +27,7 @@ type Props = {
   };
 };
 
-const TOTAL_LEVELS = 5;
+import { TOTAL_LEVELS } from "@/lib/game/levels";
 
 function dotClass(kind: GuessKind | null): string {
   if (kind === "correct") return "bg-emerald-500";

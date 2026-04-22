@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Flag } from "lucide-react";
 import type { RiffleTrack } from "@/lib/itunes";
 
-const LEVELS = [1, 2, 4, 8, 16] as const;
-type Level = (typeof LEVELS)[number];
+import { LEVELS, type Level } from "@/lib/game/levels";
 
 // How many seconds the next clip step adds. null at the final level
 // (no next step) — the skip button becomes a "give up" flag instead.
@@ -14,6 +13,7 @@ function nextLevelDiff(current: number | undefined): number | null {
   if (idx < 0 || idx >= LEVELS.length - 1) return null;
   return LEVELS[idx + 1] - LEVELS[idx];
 }
+
 
 type Props = {
   onGuess: (value: string) => void;
