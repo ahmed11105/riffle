@@ -674,21 +674,17 @@ export function RoomGame({ code }: { code: string }) {
                 onToggle={() => setPlaying((p) => !p)}
                 onEnded={() => setPlaying(false)}
               />
-              <div className="flex w-full max-w-md flex-col gap-1">
-                <div className="self-start">
-                  <VolumeControl />
-                </div>
-                <GuessInput
-                  onGuess={handleGuess}
-                  onSkip={handleSkip}
-                  currentLevel={LEVELS[levelIdx]}
-                  disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
-                  artistFilter={(room.artist_query ?? "")
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean)}
-                />
-              </div>
+              <VolumeControl />
+              <GuessInput
+                onGuess={handleGuess}
+                onSkip={handleSkip}
+                currentLevel={LEVELS[levelIdx]}
+                disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
+                artistFilter={(room.artist_query ?? "")
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)}
+              />
               <HintPanel
                 track={track}
                 revealed={hints}

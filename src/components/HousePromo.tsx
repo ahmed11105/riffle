@@ -36,7 +36,9 @@ const PROMOS: Promo[] = [
   },
   {
     id: "solo",
-    hideOn: ["/solo"],
+    // /daily already has its own "Play Solo Unlimited →" CTA below the
+    // reveal — pitching it twice on the same screen reads as spam.
+    hideOn: ["/solo", "/daily"],
     body: "Can't wait for tomorrow? Solo Unlimited keeps the songs coming",
     cta: "Play Solo",
     href: "/solo",

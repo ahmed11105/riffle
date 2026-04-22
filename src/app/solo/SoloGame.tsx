@@ -235,12 +235,8 @@ export function SoloGame() {
             onToggle={() => setPlaying((p) => !p)}
             onEnded={() => setPlaying(false)}
           />
-          <div className="flex w-full max-w-md flex-col gap-1">
-            <div className="self-start">
-              <VolumeControl />
-            </div>
-            <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={LEVELS[levelIdx]} />
-          </div>
+          <VolumeControl />
+          <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={LEVELS[levelIdx]} />
           <HintPanel
             track={current}
             revealed={hints}
