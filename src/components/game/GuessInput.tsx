@@ -75,7 +75,7 @@ export function GuessInput({ onGuess, onSkip, disabled, artistFilter }: Props) {
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => suggestions.length && setOpen(true)}
             onBlur={() => setTimeout(() => setOpen(false), 150)}
-            placeholder="Know it? Type the song..."
+            placeholder="Type the song..."
             disabled={disabled}
             className="min-w-0 flex-1 rounded-full border-2 border-amber-100/20 bg-stone-900 px-5 py-3 text-amber-100 placeholder:text-amber-100/40 focus:outline-none focus:border-amber-300 focus:ring-4 focus:ring-amber-300/40 disabled:opacity-50"
           />
