@@ -6,7 +6,6 @@ import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
 import { RevealCard } from "@/components/game/RevealCard";
-import { ShareGrid } from "@/components/game/ShareGrid";
 import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
@@ -214,11 +213,10 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             track={revealTrack}
             correct={done.correct}
             levelSolved={done.levelSolved}
-          />
-          <ShareGrid
-            date={new Date().toISOString().slice(0, 10)}
-            guesses={(done.guesses ?? guesses).map((g) => g.kind)}
-            correct={done.correct}
+            share={{
+              date: new Date().toISOString().slice(0, 10),
+              guesses: (done.guesses ?? guesses).map((g) => g.kind),
+            }}
           />
           <SaveProgressNudge />
           <NextDailyCountdown />

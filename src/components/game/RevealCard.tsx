@@ -1,14 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import confetti from "canvas-confetti";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Share2, Check } from "lucide-react";
 import type { RiffleTrack } from "@/lib/itunes";
 import { sfxCorrect, sfxWrong } from "@/lib/sfx";
 import { useAudioStore } from "@/lib/store/audio";
 import { RevealVolumeControl } from "@/components/game/RevealVolumeControl";
+
+type GuessKind = "correct" | "wrong" | "skipped";
 
 type Props = {
   track: RiffleTrack;
@@ -16,14 +18,53 @@ type Props = {
   levelSolved?: number;
   onNext?: () => void;
   nextLabel?: string;
+  // Optional inline share affordance. Renders 5 colour-coded result
+  // circles + a Share button inside the card. Square emoji grid is only
+  // used in the clipboard payload, never in the UI.
+  share?: {
+    date: string;
+    guesses: GuessKind[];
+  };
 };
+
+const TOTAL_LEVELS = 5;
+
+function dotClass(kind: GuessKind | null): string {
+  if (kind === "correct") return "bg-emerald-500";
+  if (kind === "wrong") return "bg-orange-500";
+  if (kind === "skipped") return "bg-stone-300";
+  return "border-2 border-stone-300 bg-transparent";
+}
+
+function emojiForKind(kind: GuessKind | null): string {
+  if (kind === "correct") return "🟩";
+  if (kind === "wrong") return "🟧";
+  if (kind === "skipped") return "⬜";
+  return "⬛";
+}
+
+function buildShareText(date: string, guesses: GuessKind[], correct: boolean): string {
+  const padded: (GuessKind | null)[] = Array.from({ length: TOTAL_LEVELS }, (_, i) =>
+    guesses[i] ?? null,
+  );
+  const grid = padded.map(emojiForKind).join("");
+  const result = correct ? `solved in ${guesses.length}` : "missed";
+  return `Riffle · ${date}\n${grid}  (${result})\n\nhttps://riffle.cc`;
+}
 
 // iTunes preview clips are 30 seconds long. We cap reveal-page playback at
 // 16 seconds, the longest in-game clip, both to keep the UX consistent
 // with gameplay and to avoid streaming a longer-than-fair-use snippet.
 const PREVIEW_MAX_S = 16;
 
-export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "Next" }: Props) {
+export function RevealCard({
+  track,
+  correct,
+  levelSolved,
+  onNext,
+  nextLabel = "Next",
+  share,
+}: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const pathname = usePathname();
   const proxiedSrc = `/api/audio/${track.id}?src=${encodeURIComponent(track.previewUrl)}`;
@@ -102,6 +143,8 @@ export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "N
           </div>
         </div>
 
+        {share && <ShareRow {...share} correct={correct} />}
+
         <div className="mt-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
@@ -140,6 +183,71 @@ export function RevealCard({ track, correct, levelSolved, onNext, nextLabel = "N
         </button>
       )}
     </>
+  );
+}
+
+function ShareRow({
+  date,
+  guesses,
+  correct,
+}: {
+  date: string;
+  guesses: GuessKind[];
+  correct: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const padded: (GuessKind | null)[] = Array.from({ length: TOTAL_LEVELS }, (_, i) =>
+    guesses[i] ?? null,
+  );
+
+  async function shareOrCopy() {
+    const text = buildShareText(date, guesses, correct);
+    const canNativeShare =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+    if (canNativeShare) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  }
+
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 border-t-2 border-stone-200 pt-3">
+      <div className="flex items-center gap-1.5" aria-label="Your result">
+        {padded.map((kind, i) => (
+          <span
+            key={i}
+            className={`block h-3 w-3 rounded-full ${dotClass(kind)}`}
+            aria-label={kind ?? "not reached"}
+          />
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={shareOrCopy}
+        className="inline-flex items-center gap-1.5 rounded-full border-2 border-stone-900 bg-stone-900 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-amber-300 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+      >
+        {copied ? (
+          <>
+            <Check className="h-3 w-3" /> Copied
+          </>
+        ) : (
+          <>
+            <Share2 className="h-3 w-3" /> Share
+          </>
+        )}
+      </button>
+    </div>
   );
 }
 
