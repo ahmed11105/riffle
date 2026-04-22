@@ -103,3 +103,21 @@ body {
   cursor: pointer;
   border: 2px solid #1c1917;
 }
+/* Cream-pill variant: dark translucent track that reads on cream bg.
+   Thumb stays the same amber-with-dark-border. */
+.riffle-vol-slider--on-cream::-webkit-slider-runnable-track {
+  background: rgba(28, 25, 23, 0.25);
+}
+.riffle-vol-slider--on-cream::-moz-range-track {
+  background: rgba(28, 25, 23, 0.25);
+  border: none;
+}
+.riffle-vol-slider--on-cream::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+}
+.riffle-vol-slider--on-cream::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+}
