@@ -7,6 +7,7 @@ import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
 import { RevealCard } from "@/components/game/RevealCard";
 import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
+import { HousePromo } from "@/components/HousePromo";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
@@ -219,6 +220,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
             }}
           />
           <SaveProgressNudge />
+          <HousePromo />
           <NextDailyCountdown />
           <KeepPlayingCTA />
         </>
