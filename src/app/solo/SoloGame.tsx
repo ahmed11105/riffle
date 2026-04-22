@@ -238,7 +238,7 @@ export function SoloGame() {
             Playing the first {LEVELS[levelIdx]} second
             {LEVELS[levelIdx] === 1 ? "" : "s"}
           </p>
-          <GuessInput onGuess={handleGuess} onSkip={handleSkip} />
+          <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={LEVELS[levelIdx]} />
           <HintPanel
             track={current}
             revealed={hints}

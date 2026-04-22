@@ -205,7 +205,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           <p className="text-xs text-amber-100/60">
             Playing the first {current} second{current === 1 ? "" : "s"}
           </p>
-          <GuessInput onGuess={handleGuess} onSkip={handleSkip} />
+          <GuessInput onGuess={handleGuess} onSkip={handleSkip} currentLevel={current} />
         </>
       )}
       {done && (

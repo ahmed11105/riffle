@@ -680,6 +680,7 @@ export function RoomGame({ code }: { code: string }) {
               <GuessInput
                 onGuess={handleGuess}
                 onSkip={handleSkip}
+                currentLevel={LEVELS[levelIdx]}
                 disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
                 artistFilter={(room.artist_query ?? "")
                   .split(",")
