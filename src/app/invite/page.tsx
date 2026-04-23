@@ -7,7 +7,6 @@ import { Share2, Check, Gift } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
 
 const REWARD = 100;
 
@@ -32,29 +31,33 @@ export default function InvitePage() {
 
   useEffect(() => {
     if (loading || isAnonymous || !user) return;
-    let cancelled = false;
+    const ctrl = new AbortController();
     (async () => {
-      const supabase = createClient();
-      const { data: codeData, error: codeErr } = await supabase.rpc(
-        "get_or_create_invite_code",
-      );
-      if (cancelled) return;
-      if (codeErr) {
-        setLoadErr(codeErr.message);
-        return;
+      try {
+        // Combined endpoint: lazy-creates the invite code + returns
+        // the redemption list in one round trip. Avoids the
+        // sequential SECURITY DEFINER RPC that was making this page
+        // cold-start for several seconds.
+        const res = await fetch("/api/account/invite", {
+          signal: ctrl.signal,
+        });
+        const json = (await res.json()) as {
+          code?: string;
+          redemptions?: Redemption[];
+          error?: string;
+        };
+        if (!res.ok || json.error) {
+          setLoadErr(json.error ?? "Couldn't load invite info.");
+          return;
+        }
+        setCode(json.code ?? null);
+        setRedemptions(json.redemptions ?? []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setLoadErr(e instanceof Error ? e.message : "Network error.");
       }
-      setCode(codeData as string);
-
-      const { data: rData } = await supabase
-        .from("invite_redemptions")
-        .select("redeemed_email, redeemed_at, reward_amount")
-        .eq("inviter_id", user.id)
-        .order("redeemed_at", { ascending: false });
-      if (!cancelled) setRedemptions((rData as Redemption[] | null) ?? []);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => ctrl.abort();
   }, [loading, isAnonymous, user]);
 
   const inviteUrl =
