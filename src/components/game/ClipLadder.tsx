@@ -1,8 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-
-const LEVELS = [1, 2, 4, 8, 16] as const;
+import { LEVELS } from "@/lib/game/levels";
 
 export function ClipLadder({
   currentLevel,
