@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const VALID_KINDS = new Set(["year", "artist_letter", "artist"]);
+const VALID_KINDS = new Set([
+  "year",
+  "title_letter_1",
+  "title_letter_2",
+  "artist",
+]);
 
 // Grant a single free hint of the given kind. Called by the client
 // after the placeholder ad-watch interstitial finishes its countdown.

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Gift } from "lucide-react";
+import { Check, Gift, Lock } from "lucide-react";
 import {
   HINT_COSTS,
   HINT_ICONS,
   HINT_KINDS,
   HINT_LABELS,
+  HINT_PREREQS,
   describeHint,
   type HintKind,
 } from "@/lib/riffs/hints";
@@ -42,8 +43,10 @@ async function lookupMissingField(
       artist?: string | null;
     };
     if (kind === "year") return json.releaseYear ? String(json.releaseYear) : null;
-    if (kind === "artist_letter") return json.artist?.[0]?.toUpperCase() ?? null;
     if (kind === "artist") return json.artist ?? null;
+    // Title letters resolve from track.title locally — no iTunes
+    // round-trip needed because the title is always present on the
+    // pool track that drives the round.
   } catch {
     return null;
   }
@@ -180,34 +183,48 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
 
       {/* Icon-based hint row. Each badge shows either the banked
           quantity (if > 0) or the Riffs cost. Used hints flip to a
-          checkmark. */}
-      <div className="grid grid-cols-3 gap-2">
+          checkmark. Locked hints (e.g. 2nd letter before 1st is
+          revealed) show a Lock icon and ignore clicks. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {HINT_KINDS.map((kind) => {
           const Icon = HINT_ICONS[kind];
           const banked = getInventory(kind);
           const cost = HINT_COSTS[kind];
           const used = revealedKinds.has(kind);
+          const prereq = HINT_PREREQS[kind];
+          const locked = prereq != null && !revealedKinds.has(prereq);
           const cantAfford = !adminOn && banked === 0 && ready && balance < cost;
           const isBuyingThis = buying === kind;
           const isDisabled =
-            !!disabled || used || spending || cantAfford || isBuyingThis;
+            !!disabled || used || locked || spending || cantAfford || isBuyingThis;
           return (
             <button
               key={kind}
               type="button"
               onClick={() => buyHint(kind)}
               disabled={isDisabled}
-              aria-label={`${HINT_LABELS[kind]} hint`}
+              aria-label={
+                locked
+                  ? `${HINT_LABELS[kind]} hint (locked, reveal ${HINT_LABELS[prereq!]} first)`
+                  : `${HINT_LABELS[kind]} hint`
+              }
+              title={
+                locked ? `Reveal ${HINT_LABELS[prereq!]} first` : undefined
+              }
               className={`relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 pb-1.5 pt-3 transition ${
                 used
                   ? "border-stone-300 bg-stone-100 text-stone-400"
-                  : isDisabled
-                    ? "border-stone-900 bg-stone-100 text-stone-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
-                    : "border-stone-900 bg-amber-300 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+                  : locked
+                    ? "border-stone-300 bg-stone-100 text-stone-400"
+                    : isDisabled
+                      ? "border-stone-900 bg-stone-100 text-stone-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+                      : "border-stone-900 bg-amber-300 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
               }`}
             >
               {used ? (
                 <Check className="h-6 w-6" />
+              ) : locked ? (
+                <Lock className="h-6 w-6" />
               ) : (
                 <Icon className="h-6 w-6" />
               )}
@@ -215,8 +232,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
                 {HINT_LABELS[kind]}
               </span>
 
-              {!used && !adminOn && banked > 0 && (
-                // Banked-quantity badge, top-right.
+              {!used && !locked && !adminOn && banked > 0 && (
                 <span
                   aria-label={`${banked} banked`}
                   className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 px-1 text-[10px] font-black text-stone-900 shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
@@ -225,8 +241,15 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
                 </span>
               )}
 
-              {!used && (
-                // Bottom row: either "FREE" (banked) or "X 🪙" (cost).
+              {used ? (
+                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
+                  Used
+                </span>
+              ) : locked ? (
+                <span className="text-[10px] font-black uppercase tracking-wider opacity-60">
+                  Locked
+                </span>
+              ) : (
                 <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
                   {adminOn
                     ? "Free"
@@ -235,11 +258,6 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
                       : isBuyingThis
                         ? "…"
                         : `${cost} Riffs`}
-                </span>
-              )}
-              {used && (
-                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
-                  Used
                 </span>
               )}
             </button>
