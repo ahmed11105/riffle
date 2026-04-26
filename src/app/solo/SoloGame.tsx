@@ -6,7 +6,10 @@ import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
 import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
+import { SoloAdBreak } from "@/components/game/SoloAdBreak";
 import { HintPanel } from "@/components/game/HintPanel";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAdminMode } from "@/lib/admin";
 import { RiffsBadge } from "@/components/RiffsBadge";
 import type { RiffleTrack } from "@/lib/itunes";
 import { DAILY_POOL, toRiffleTrack } from "@/lib/daily/pick";
@@ -124,14 +127,46 @@ export function SoloGame() {
     [current],
   );
 
-  const next = useCallback(() => {
+  // Show an interstitial ad break every N completed Solo rounds for
+  // free players. Pro / admin skip entirely. The render of the modal
+  // happens below; this hook just gates whether the next-song advance
+  // pauses for it.
+  const ROUNDS_PER_AD = 2;
+  const { isPro } = useAuth();
+  const [adminOn] = useAdminMode();
+  const adFree = isPro || adminOn;
+  const [adRoundCount, setAdRoundCount] = useState(0);
+  const [showingAd, setShowingAd] = useState(false);
+
+  function advanceToNextRound() {
     setQueueIdx((i) => i + 1);
     setLevelIdx(0);
     setGuesses([]);
     setDone(null);
     setPlaying(false);
     setHints([]);
-  }, []);
+  }
+
+  const next = useCallback(() => {
+    if (adFree) {
+      advanceToNextRound();
+      return;
+    }
+    const nextCount = adRoundCount + 1;
+    if (nextCount >= ROUNDS_PER_AD) {
+      setAdRoundCount(0);
+      setShowingAd(true);
+      return;
+    }
+    setAdRoundCount(nextCount);
+    advanceToNextRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adFree, adRoundCount]);
+
+  function dismissAdAndAdvance() {
+    setShowingAd(false);
+    advanceToNextRound();
+  }
 
   function markPlayed(trackId: string) {
     savePlayedId(trackId);
@@ -252,6 +287,7 @@ export function SoloGame() {
           nextLabel="Next song"
         />
       )}
+      {showingAd && <SoloAdBreak onContinue={dismissAdAndAdvance} />}
     </div>
   );
 }
