@@ -33,13 +33,13 @@ export const metadata: Metadata = {
     template: "%s · Riffle",
   },
   description:
-    "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers. Play free.",
+    "Name the tune from half a second of audio. Daily streaks, friends rooms, and points-based wagers. Play free.",
   applicationName: "Riffle",
   keywords: ["song quiz", "music game", "daily game", "heardle", "guess the song"],
   openGraph: {
     title: "Riffle, Daily song-guessing game",
     description:
-      "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers.",
+      "Name the tune from half a second of audio. Daily streaks, friends rooms, and points-based wagers.",
     type: "website",
     siteName: "Riffle",
     url: SITE_URL,
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Riffle, Daily song-guessing game",
     description:
-      "Name the tune from one second of audio. Daily streaks, friends rooms, and points-based wagers.",
+      "Name the tune from half a second of audio. Daily streaks, friends rooms, and points-based wagers.",
   },
 };
 

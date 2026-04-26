@@ -46,5 +46,5 @@ export async function POST(req: Request) {
   if (updateErr) {
     return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, consumed: true });
+  return NextResponse.json({ ok: true, consumed: true, hint_inventory: next });
 }

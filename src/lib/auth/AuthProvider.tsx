@@ -45,6 +45,10 @@ type AuthContextValue = {
   isPro: boolean;
   refreshProfile: () => Promise<void>;
   refreshStreak: () => Promise<void>;
+  // Patch profile state in-place after a server mutation already
+  // returned the new field values. Avoids the round-trip + Web Lock
+  // risk of refreshProfile.
+  mergeProfile: (partial: Partial<Profile>) => void;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
@@ -59,39 +63,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status, hint_inventory",
-        )
-        .eq("id", userId)
-        .maybeSingle();
-      if (error) {
-        console.warn("Profile fetch failed:", error.message);
+  // Both profile and streak now go through /api/account/profile so the
+  // browser supabase-js Web Lock can't hang the read. Server route
+  // uses the admin client + cookie auth.
+  const fetchProfileAndStreak = useCallback(async () => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    try {
+      const res = await fetch("/api/account/profile", { signal: ctrl.signal });
+      if (!res.ok) {
+        console.warn("Profile fetch failed:", res.status);
         return;
       }
-      if (data) setProfile(data as Profile);
-    },
-    [supabase],
-  );
+      const json = (await res.json()) as {
+        profile?: Profile | null;
+        streak?: Streak | null;
+      };
+      if (json.profile) setProfile(json.profile);
+      if (json.streak) setStreak(json.streak);
+    } catch (e) {
+      console.warn("Profile fetch errored:", e);
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
 
-  const fetchStreak = useCallback(
-    async (userId: string) => {
-      const { data, error } = await supabase
-        .from("streaks")
-        .select("current_streak, longest_streak, last_play_date")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (error) {
-        console.warn("Streak fetch failed:", error.message);
-        return;
-      }
-      if (data) setStreak(data as Streak);
-    },
-    [supabase],
-  );
+  // Locally patch the profile state without a network round-trip. Used
+  // after a server mutation already returned the new field values, so
+  // we don't need to re-fetch the whole row (and don't risk the Web
+  // Lock hanging the refresh).
+  const mergeProfile = useCallback((partial: Partial<Profile>) => {
+    setProfile((p) => (p ? { ...p, ...partial } : p));
+  }, []);
 
   // Sign in anonymously on first load if there's no session yet.
   // Anonymous users get a real auth.users row + profile/streak via the
@@ -125,14 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         setSession(initial);
         setUser(initial?.user ?? null);
-        // Release the loading gate as soon as we know WHO the user is,
-        // so the header avatar / "Sign in" pill can render immediately.
-        // Profile and streak fetches finish in the background and fill
-        // in the display name + stats when they arrive.
         setLoading(false);
         if (initial?.user) {
-          fetchProfile(initial.user.id);
-          fetchStreak(initial.user.id);
+          fetchProfileAndStreak();
         }
       } catch (e) {
         console.warn("Auth init failed, will rely on onAuthStateChange:", e);
@@ -146,10 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
-          await Promise.all([
-            fetchProfile(newSession.user.id),
-            fetchStreak(newSession.user.id),
-          ]);
+          await fetchProfileAndStreak();
         } else {
           setProfile(null);
           setStreak(null);
@@ -162,15 +157,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(failsafe);
       subscription.subscription.unsubscribe();
     };
-  }, [ensureSession, fetchProfile, fetchStreak, supabase]);
+  }, [ensureSession, fetchProfileAndStreak, supabase]);
 
   const refreshProfile = useCallback(async () => {
-    if (user?.id) await fetchProfile(user.id);
-  }, [user, fetchProfile]);
+    await fetchProfileAndStreak();
+  }, [fetchProfileAndStreak]);
 
   const refreshStreak = useCallback(async () => {
-    if (user?.id) await fetchStreak(user.id);
-  }, [user, fetchStreak]);
+    await fetchProfileAndStreak();
+  }, [fetchProfileAndStreak]);
 
   const signInWithEmail = useCallback(
     async (email: string) => {
@@ -226,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isPro,
         refreshProfile,
         refreshStreak,
+        mergeProfile,
         signInWithEmail,
         signOut,
       }}

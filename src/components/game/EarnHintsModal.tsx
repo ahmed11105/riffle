@@ -22,7 +22,7 @@ export function EarnHintsModal({
   onClose: () => void;
   onEarned?: (kind: HintKind) => void;
 }) {
-  const { refreshProfile } = useAuth();
+  const { mergeProfile } = useAuth();
   const [phase, setPhase] = useState<Phase>("select");
   const [chosen, setChosen] = useState<HintKind | null>(null);
   const [seconds, setSeconds] = useState(5);
@@ -54,13 +54,21 @@ export function EarnHintsModal({
             body: JSON.stringify({ kind: chosen }),
             signal: ctrl.signal,
           });
-          const json = (await res.json()) as { ok?: boolean; error?: string };
+          const json = (await res.json()) as {
+            ok?: boolean;
+            error?: string;
+            hint_inventory?: Record<string, number>;
+          };
           if (!res.ok || !json.ok) {
             setError(json.error ?? "Couldn't award hint. Try again.");
             setPhase("error");
             return;
           }
-          await refreshProfile();
+          // Patch the auth context locally with the inventory the
+          // server just wrote — no follow-up fetch, no Web Lock risk.
+          if (json.hint_inventory) {
+            mergeProfile({ hint_inventory: json.hint_inventory });
+          }
           if (chosen) onEarned?.(chosen);
           setPhase("rewarded");
         } catch (e) {
@@ -75,7 +83,7 @@ export function EarnHintsModal({
     }
     const id = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(id);
-  }, [phase, seconds, chosen, refreshProfile, onEarned]);
+  }, [phase, seconds, chosen, mergeProfile, onEarned]);
 
   if (!open) return null;
 
@@ -141,17 +149,14 @@ export function EarnHintsModal({
           </>
         )}
 
-        {/* Phase: watching the placeholder ad */}
+        {/* Phase: forced break before the hint is granted. */}
         {inWatching && (
           <div className="mt-3 flex flex-col items-center gap-3 rounded-2xl border-2 border-stone-900 bg-stone-900 p-6 text-stone-50">
             <div className="text-xs font-bold uppercase tracking-wider text-stone-400">
-              Ad placeholder
+              Awarding hint in
             </div>
             <div className="text-5xl font-black tabular-nums text-amber-300">
               {seconds}
-            </div>
-            <div className="text-xs text-stone-400">
-              Real ads coming soon
             </div>
           </div>
         )}

@@ -93,7 +93,7 @@ export default function RoomsPage() {
           Play with Friends
         </h1>
         <p className="mt-3 text-amber-100/70">
-          Create a room, share the code, and wager coins each round.
+          Create a room, share the code, and wager game points each round.
         </p>
 
         <div className="mt-6 w-full rounded-3xl border-4 border-stone-900 bg-stone-50 p-5 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">

@@ -60,5 +60,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, hint_inventory: next });
 }

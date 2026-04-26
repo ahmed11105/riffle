@@ -70,7 +70,7 @@ export default function InvitePage() {
   async function shareOrCopy() {
     if (!inviteUrl) return;
     const text =
-      `Play Riffle with me — guess songs from one second of audio. ` +
+      `Play Riffle with me, guess songs from half a second of audio. ` +
       `We both get ${REWARD} Riffs when you sign up: ${inviteUrl}`;
     const canNativeShare =
       typeof navigator !== "undefined" &&

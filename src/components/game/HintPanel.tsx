@@ -66,7 +66,7 @@ async function resolveHintValue(
 
 export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: Props) {
   const { balance, spend, spending, ready } = useRiffs();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, mergeProfile } = useAuth();
   const [adminOn] = useAdminMode();
   const [error, setError] = useState<string | null>(null);
   const [buying, setBuying] = useState<HintKind | null>(null);
@@ -102,6 +102,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
             ok?: boolean;
             consumed?: boolean;
             error?: string;
+            hint_inventory?: Record<string, number>;
           };
           if (!res.ok || !json.ok) {
             setError(json.error ?? "Couldn't use banked hint.");
@@ -109,7 +110,9 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
           }
           if (json.consumed) {
             consumed = true;
-            await refreshProfile();
+            if (json.hint_inventory) {
+              mergeProfile({ hint_inventory: json.hint_inventory });
+            }
           }
           // consumed=false → inventory was 0; fall through to Riffs.
         } catch (e) {

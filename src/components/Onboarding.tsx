@@ -10,13 +10,13 @@ const STEPS = [
   {
     title: "Name the tune.",
     body:
-      "We play one second of a song. You guess. Wrong or stumped? You get more time, but you score less.",
+      "We play half a second of a song. You guess. Wrong or stumped? You get more time, but you score less.",
     badge: "1 / 3",
   },
   {
     title: "Wager your confidence.",
     body:
-      "In Solo and Rooms, you bet game points before you guess. The shorter the clip you commit to (1s = 5×, 2s = 3×, 4s = 2×, 8s = 1.5×, 16s = 1×), the bigger the payout. Wager points are not real money.",
+      "In Solo and Rooms, you bet game points before you guess. The shorter the clip you commit to (0.5s = 6×, 1s = 4×, 2s = 2.5×, 4s = 1.75×, 7s = 1.25×, 10s = 1×), the bigger the payout. Wager points are not real money.",
     badge: "2 / 3",
   },
   {
