@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
@@ -79,11 +79,19 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   // Persist the result the first time we transition to `done`.
   // Also write the result + streak update to Supabase. Best-effort, the
   // local state is the source of truth for the UI.
+  //
+  // The submittedRef guard stops the RPC firing twice when the user
+  // identity object updates (e.g. profile fetch resolves and bumps
+  // user). Without it daily_results' unique (user_id, puzzle_date)
+  // index returns 409 on the second insert.
   const { user, refreshStreak } = useAuth();
+  const submittedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!done) return;
     saveFinished(track.id, done);
     if (!user) return;
+    if (submittedRef.current === track.id) return;
+    submittedRef.current = track.id;
     const today = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
     const supabase = createClient();
     supabase

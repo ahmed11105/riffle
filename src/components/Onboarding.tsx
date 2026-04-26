@@ -22,7 +22,7 @@ const STEPS = [
   {
     title: "Stuck? Spend Riffs.",
     body:
-      "Riffs are an in-game currency. Spend them on hints (genre, year, first letter of artist) or themed song packs. Earn them by playing, or buy a top-up. Riffs never touch wagers.",
+      "Riffs are an in-game currency. Spend them on hints (year, first letter of artist, full artist) or themed song packs. Earn them by playing, or buy a top-up. Riffs never touch wagers.",
     badge: "3 / 3",
   },
 ];

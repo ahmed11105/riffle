@@ -16,6 +16,7 @@ export default function RoomsPage() {
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roomsCapped, setRoomsCapped] = useState(false);
   const [shortPlaceholder, setShortPlaceholder] = useState(false);
 
   useEffect(() => {
@@ -54,7 +55,9 @@ export default function RoomsPage() {
         message?: string;
       };
       if (res.status === 402 && json.error === "rooms_capped") {
-        router.push("/shop?upsell=rooms_capped#pro");
+        setRoomsCapped(true);
+        setError(json.message ?? "You've hit today's free room cap.");
+        setCreating(false);
         return;
       }
       if (!res.ok || !json.code) throw new Error(json.message ?? json.error ?? "create failed");
@@ -146,6 +149,21 @@ export default function RoomsPage() {
           {error && (
             <div className="mt-3 rounded-xl bg-rose-100 px-3 py-2 text-sm font-bold text-rose-700">
               {error}
+            </div>
+          )}
+
+          {roomsCapped && (
+            <div className="mt-3 rounded-2xl border-2 border-stone-900 bg-amber-100 p-3 text-sm">
+              <p className="font-black">Free tier: one Friends room per day.</p>
+              <p className="mt-1 text-stone-700">
+                Try again tomorrow, or unlock unlimited rooms with Riffle Pro.
+              </p>
+              <Link
+                href="/shop?upsell=rooms_capped#pro"
+                className="mt-2 inline-flex items-center rounded-full border-2 border-stone-900 bg-amber-400 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+              >
+                See Pro →
+              </Link>
             </div>
           )}
         </div>
