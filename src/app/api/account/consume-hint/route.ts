@@ -4,21 +4,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const VALID_KINDS = new Set(["year", "artist_letter", "artist"]);
 
-// Grant a single free hint of the given kind. Called by the client
-// after the placeholder ad-watch interstitial finishes its countdown.
-//
-// Implemented as a direct admin UPDATE rather than an RPC to dodge
-// PostgREST's SECURITY DEFINER cold-start (5-15s on first call by
-// a freshly-authenticated user). Read-modify-write is safe here
-// because each user only grants their own hints, and the in-memory
-// rate-limit below caps concurrent calls to 1 per 4s per user.
-//
-// When AdSense / a reward video SDK is wired the SDK's signed
-// completion token (SSV) gets verified before this update.
-
-const RATE_WINDOW_MS = 4_000;
-const lastGrantByUser = new Map<string, number>();
-
+// Consume one banked hint of the given kind. Direct admin
+// read-modify-write to avoid the consume_hint RPC's SECURITY
+// DEFINER cold start. Returns { ok: true, consumed: true } if a
+// hint was banked and decremented, or { ok: true, consumed: false }
+// when the user has no banked hints left (the client then falls
+// back to spending Riffs).
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { kind?: string };
   const kind = body.kind;
@@ -33,13 +24,6 @@ export async function POST(req: Request) {
   }
   const userId = session.user.id;
 
-  const now = Date.now();
-  const last = lastGrantByUser.get(userId) ?? 0;
-  if (now - last < RATE_WINDOW_MS) {
-    return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
-  }
-  lastGrantByUser.set(userId, now);
-
   const admin = createAdminClient();
   const { data: row, error: readErr } = await admin
     .from("profiles")
@@ -50,8 +34,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: readErr.message }, { status: 500 });
   }
   const current = (row?.hint_inventory ?? {}) as Record<string, number>;
-  const next = { ...current, [kind]: (current[kind] ?? 0) + 1 };
-
+  const have = current[kind] ?? 0;
+  if (have <= 0) {
+    return NextResponse.json({ ok: true, consumed: false });
+  }
+  const next = { ...current, [kind]: have - 1 };
   const { error: updateErr } = await admin
     .from("profiles")
     .update({ hint_inventory: next })
@@ -59,6 +46,5 @@ export async function POST(req: Request) {
   if (updateErr) {
     return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, consumed: true });
 }

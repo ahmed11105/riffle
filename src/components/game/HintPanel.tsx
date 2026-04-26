@@ -13,7 +13,6 @@ import {
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { useAdminMode } from "@/lib/admin";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
 import { EarnHintsModal } from "@/components/game/EarnHintsModal";
 import type { RiffleTrack } from "@/lib/itunes";
 
@@ -86,22 +85,40 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
       let consumed = false;
 
       if (!adminOn && getInventory(kind) > 0) {
-        // Try to consume from banked inventory first. Atomic, so a
-        // stale client-side count doesn't double-spend.
-        const supabase = createClient();
-        const { data, error: rpcErr } = await supabase.rpc("consume_hint", {
-          p_kind: kind,
-        });
-        if (rpcErr) {
-          setError(rpcErr.message);
+        // Try to consume from banked inventory first via the server
+        // route (admin client direct UPDATE — avoids the RPC cold
+        // start). 8s client timeout so the spend button can never
+        // hang.
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        try {
+          const res = await fetch("/api/account/consume-hint", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ kind }),
+            signal: ctrl.signal,
+          });
+          const json = (await res.json()) as {
+            ok?: boolean;
+            consumed?: boolean;
+            error?: string;
+          };
+          if (!res.ok || !json.ok) {
+            setError(json.error ?? "Couldn't use banked hint.");
+            return;
+          }
+          if (json.consumed) {
+            consumed = true;
+            await refreshProfile();
+          }
+          // consumed=false → inventory was 0; fall through to Riffs.
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Network error.";
+          setError(msg.includes("aborted") ? "Request timed out, try again." : msg);
           return;
+        } finally {
+          clearTimeout(timer);
         }
-        if (data === true) {
-          consumed = true;
-          await refreshProfile();
-        }
-        // If data === false, inventory was actually 0 (race or stale
-        // read). Fall through to the Riffs spend path below.
       }
 
       if (!adminOn && !consumed) {

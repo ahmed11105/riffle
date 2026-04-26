@@ -42,13 +42,17 @@ export function EarnHintsModal({
   useEffect(() => {
     if (phase !== "watching") return;
     if (seconds <= 0) {
-      // Time's up — grant the hint.
+      // Time's up — grant the hint. 8s client timeout so the modal
+      // can't get stuck if the network or function cold-start hangs.
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
       (async () => {
         try {
           const res = await fetch("/api/account/earn-hint", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ kind: chosen }),
+            signal: ctrl.signal,
           });
           const json = (await res.json()) as { ok?: boolean; error?: string };
           if (!res.ok || !json.ok) {
@@ -60,11 +64,14 @@ export function EarnHintsModal({
           if (chosen) onEarned?.(chosen);
           setPhase("rewarded");
         } catch (e) {
-          setError(e instanceof Error ? e.message : "Network error.");
+          const msg = e instanceof Error ? e.message : "Network error.";
+          setError(msg.includes("aborted") ? "Request timed out, try again." : msg);
           setPhase("error");
+        } finally {
+          clearTimeout(timer);
         }
       })();
-      return;
+      return () => clearTimeout(timer);
     }
     const id = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(id);
