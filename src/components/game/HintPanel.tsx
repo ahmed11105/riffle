@@ -1,14 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Gift } from "lucide-react";
 import {
   HINT_COSTS,
+  HINT_ICONS,
+  HINT_KINDS,
   HINT_LABELS,
   describeHint,
   type HintKind,
 } from "@/lib/riffs/hints";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { useAdminMode } from "@/lib/admin";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
+import { EarnHintsModal } from "@/components/game/EarnHintsModal";
 import type { RiffleTrack } from "@/lib/itunes";
 
 type RevealedHint = { kind: HintKind; value: string };
@@ -25,12 +31,6 @@ type Props = {
   disabled?: boolean;
 };
 
-const HINT_ORDER: HintKind[] = ["year", "artist_letter", "artist"];
-
-// Solo / Rooms tracks come from now-pool.json which doesn't carry
-// release year inline. When the player buys a year hint we fall back
-// to the iTunes lookup route. Artist name is always on the pool track
-// so "artist" and "artist_letter" resolve locally.
 async function lookupMissingField(
   trackId: string,
   kind: HintKind,
@@ -51,8 +51,6 @@ async function lookupMissingField(
   return null;
 }
 
-// Prefer local track data, fall back to iTunes lookup so the user
-// always gets a real answer for their Riffs instead of "Unknown".
 async function resolveHintValue(
   track: RiffleTrack,
   kind: HintKind,
@@ -69,22 +67,49 @@ async function resolveHintValue(
 
 export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: Props) {
   const { balance, spend, spending, ready } = useRiffs();
+  const { profile, refreshProfile } = useAuth();
   const [adminOn] = useAdminMode();
   const [error, setError] = useState<string | null>(null);
   const [buying, setBuying] = useState<HintKind | null>(null);
+  const [earnOpen, setEarnOpen] = useState(false);
   const revealedKinds = new Set(revealed.map((h) => h.kind));
+  const inventory = profile?.hint_inventory ?? {};
+
+  function getInventory(kind: HintKind): number {
+    return inventory[kind] ?? 0;
+  }
 
   async function buyHint(kind: HintKind) {
     setError(null);
     setBuying(kind);
     try {
-      // Admin bypass: skip the spend RPC entirely so hints are free.
-      if (!adminOn) {
+      let consumed = false;
+
+      if (!adminOn && getInventory(kind) > 0) {
+        // Try to consume from banked inventory first. Atomic, so a
+        // stale client-side count doesn't double-spend.
+        const supabase = createClient();
+        const { data, error: rpcErr } = await supabase.rpc("consume_hint", {
+          p_kind: kind,
+        });
+        if (rpcErr) {
+          setError(rpcErr.message);
+          return;
+        }
+        if (data === true) {
+          consumed = true;
+          await refreshProfile();
+        }
+        // If data === false, inventory was actually 0 (race or stale
+        // read). Fall through to the Riffs spend path below.
+      }
+
+      if (!adminOn && !consumed) {
         const cost = HINT_COSTS[kind];
         const result = await spend(cost, "hint", kind);
         if (!result.ok) {
           if (result.reason === "insufficient") {
-            setError(`Need ${cost} Riffs. Visit the shop to top up.`);
+            setError(`Need ${cost} Riffs. Watch an ad below or top up in the shop.`);
           } else if (result.reason === "auth") {
             setError("Sign in to use hints.");
           } else {
@@ -93,6 +118,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
           return;
         }
       }
+
       const value = await resolveHintValue(track, kind);
       const hint: RevealedHint = { kind, value };
       onReveal(hint);
@@ -118,6 +144,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
         </span>
       </div>
 
+      {/* Revealed-so-far display, dark contrast pill below */}
       {revealed.length > 0 && (
         <ul className="flex flex-col gap-1 rounded-xl border-2 border-stone-900 bg-stone-900 p-3 text-sm text-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
           {revealed.map((h) => (
@@ -131,11 +158,16 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
         </ul>
       )}
 
+      {/* Icon-based hint row. Each badge shows either the banked
+          quantity (if > 0) or the Riffs cost. Used hints flip to a
+          checkmark. */}
       <div className="grid grid-cols-3 gap-2">
-        {HINT_ORDER.map((kind) => {
+        {HINT_KINDS.map((kind) => {
+          const Icon = HINT_ICONS[kind];
+          const banked = getInventory(kind);
           const cost = HINT_COSTS[kind];
           const used = revealedKinds.has(kind);
-          const cantAfford = !adminOn && ready && balance < cost;
+          const cantAfford = !adminOn && banked === 0 && ready && balance < cost;
           const isBuyingThis = buying === kind;
           const isDisabled =
             !!disabled || used || spending || cantAfford || isBuyingThis;
@@ -145,26 +177,75 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
               type="button"
               onClick={() => buyHint(kind)}
               disabled={isDisabled}
-              className={
+              aria-label={`${HINT_LABELS[kind]} hint`}
+              className={`relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 pb-1.5 pt-3 transition ${
                 used
-                  ? "rounded-xl border-2 border-stone-300 bg-stone-100 px-2 py-2 text-xs font-black text-stone-400"
+                  ? "border-stone-300 bg-stone-100 text-stone-400"
                   : isDisabled
-                    ? "rounded-xl border-2 border-stone-900 bg-stone-100 px-2 py-2 text-xs font-black text-stone-400"
-                    : "rounded-xl border-2 border-stone-900 bg-amber-300 px-2 py-2 text-xs font-black text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
-              }
+                    ? "border-stone-900 bg-stone-100 text-stone-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+                    : "border-stone-900 bg-amber-300 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+              }`}
             >
-              <div>{HINT_LABELS[kind]}</div>
-              <div className="text-[10px] uppercase tracking-wider opacity-70">
-                {used ? "Used" : isBuyingThis ? "…" : adminOn ? "Free" : `${cost} Riffs`}
-              </div>
+              {used ? (
+                <Check className="h-6 w-6" />
+              ) : (
+                <Icon className="h-6 w-6" />
+              )}
+              <span className="text-[9px] font-black uppercase tracking-wider">
+                {HINT_LABELS[kind]}
+              </span>
+
+              {!used && !adminOn && banked > 0 && (
+                // Banked-quantity badge, top-right.
+                <span
+                  aria-label={`${banked} banked`}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 px-1 text-[10px] font-black text-stone-900 shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+                >
+                  {banked}
+                </span>
+              )}
+
+              {!used && (
+                // Bottom row: either "FREE" (banked) or "X 🪙" (cost).
+                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
+                  {adminOn
+                    ? "Free"
+                    : banked > 0
+                      ? "Free"
+                      : isBuyingThis
+                        ? "…"
+                        : `${cost} Riffs`}
+                </span>
+              )}
+              {used && (
+                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
+                  Used
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
+      {/* Earn free hints — placeholder ad watch. Hidden in admin mode. */}
+      {!adminOn && (
+        <button
+          type="button"
+          onClick={() => setEarnOpen(true)}
+          className="flex items-center justify-center gap-1.5 rounded-full border-2 border-stone-900 bg-stone-100 py-1.5 text-xs font-black uppercase tracking-wider text-stone-900 transition hover:bg-amber-200"
+        >
+          <Gift className="h-3.5 w-3.5" /> Earn free hints
+        </button>
+      )}
+
       {error && (
         <p className="text-xs font-bold text-rose-700">{error}</p>
       )}
+
+      <EarnHintsModal
+        open={earnOpen}
+        onClose={() => setEarnOpen(false)}
+      />
     </div>
   );
 }

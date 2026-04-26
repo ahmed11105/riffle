@@ -24,6 +24,9 @@ export type Profile = {
   is_pro: boolean;
   pro_current_period_end: string | null;
   pro_status: string | null;
+  // Banked free hints, keyed by HintKind. Decremented atomically by
+  // consume_hint(); only falls back to Riffs spending when 0.
+  hint_inventory: Record<string, number>;
 };
 
 export type Streak = {
@@ -61,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status",
+          "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status, hint_inventory",
         )
         .eq("id", userId)
         .maybeSingle();

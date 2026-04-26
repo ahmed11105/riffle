@@ -1,6 +1,9 @@
 import type { RiffleTrack } from "@/lib/itunes";
+import { Calendar, CaseSensitive, Mic2, type LucideIcon } from "lucide-react";
 
 export type HintKind = "year" | "artist_letter" | "artist";
+
+export const HINT_KINDS: HintKind[] = ["year", "artist_letter", "artist"];
 
 export const HINT_COSTS: Record<HintKind, number> = {
   year: 10,
@@ -10,8 +13,14 @@ export const HINT_COSTS: Record<HintKind, number> = {
 
 export const HINT_LABELS: Record<HintKind, string> = {
   year: "Year",
-  artist_letter: "First letter of artist",
+  artist_letter: "First letter",
   artist: "Artist",
+};
+
+export const HINT_ICONS: Record<HintKind, LucideIcon> = {
+  year: Calendar,
+  artist_letter: CaseSensitive,
+  artist: Mic2,
 };
 
 export function describeHint(track: RiffleTrack, kind: HintKind): string {
