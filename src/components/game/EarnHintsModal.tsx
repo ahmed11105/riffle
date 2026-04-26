@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { X, Sparkles } from "lucide-react";
 import { HINT_ICONS, HINT_KINDS, HINT_LABELS, type HintKind } from "@/lib/riffs/hints";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { AdSlot } from "@/components/AdSlot";
+import { AD_SLOTS } from "@/lib/adslots";
 
 // Forced 5-second placeholder "ad" that grants the player one free
 // hint of the kind they selected. Same shell as SoloAdBreak; once
@@ -151,12 +153,29 @@ export function EarnHintsModal({
 
         {/* Phase: forced break before the hint is granted. */}
         {inWatching && (
-          <div className="mt-3 flex flex-col items-center gap-3 rounded-2xl border-2 border-stone-900 bg-stone-900 p-6 text-stone-50">
-            <div className="text-xs font-bold uppercase tracking-wider text-stone-400">
-              Awarding hint in
+          <div className="mt-3 space-y-3">
+            <div className="min-h-[120px] overflow-hidden rounded-2xl border-2 border-stone-900 bg-stone-100">
+              <AdSlot
+                slotId={AD_SLOTS.earnHint}
+                format="rectangle"
+                className="block h-full w-full"
+                fallback={
+                  <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-1 p-4 text-stone-700">
+                    <p className="text-base font-black">No ad breaks with Riffle Pro</p>
+                    <p className="text-xs text-stone-500">
+                      £2.99/mo · skip these waits forever
+                    </p>
+                  </div>
+                }
+              />
             </div>
-            <div className="text-5xl font-black tabular-nums text-amber-300">
-              {seconds}
+            <div className="flex items-center justify-between rounded-xl bg-stone-900 px-4 py-3 text-stone-50">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                Awarding hint in
+              </span>
+              <span className="text-3xl font-black tabular-nums text-amber-300">
+                {seconds}
+              </span>
             </div>
           </div>
         )}

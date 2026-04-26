@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AdminKeyListener } from "@/components/AdminKeyListener";
 import { AdminFrame } from "@/components/AdminFrame";
@@ -50,6 +51,10 @@ export const metadata: Metadata = {
     description:
       "Name the tune from half a second of audio. Daily streaks, friends rooms, and points-based wagers.",
   },
+  // AdSense site verification.
+  other: {
+    "google-adsense-account": "ca-pub-7248319991910293",
+  },
 };
 
 export const viewport: Viewport = {
@@ -74,6 +79,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Google AdSense loader. Loads once globally; ad units use
+            (window.adsbygoogle = window.adsbygoogle || []).push({}) on
+            mount. Until AdSense approves the site, the script is a
+            no-op for serving — but we need it live for verification. */}
+        <Script
+          id="adsbygoogle-loader"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7248319991910293"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <AuthProvider>
           <AnalyticsProvider>
             <Suspense>
