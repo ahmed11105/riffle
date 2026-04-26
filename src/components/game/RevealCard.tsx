@@ -28,6 +28,7 @@ type Props = {
 };
 
 import { TOTAL_LEVELS } from "@/lib/game/levels";
+import { copyText } from "@/lib/clipboard";
 
 function dotClass(kind: GuessKind | null): string {
   if (kind === "correct") return "bg-emerald-500";
@@ -115,7 +116,7 @@ export function RevealCard({
           <div className="relative">
             <Image
               src={track.albumArtUrl}
-              alt={track.album}
+              alt={`${track.title} by ${track.artist}`}
               width={96}
               height={96}
               className="h-24 w-24 rounded-xl border-2 border-stone-900"
@@ -214,11 +215,11 @@ function ShareRow({
         if ((e as Error).name === "AbortError") return;
       }
     }
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await copyText(text);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch {}
+    }
   }
 
   return (

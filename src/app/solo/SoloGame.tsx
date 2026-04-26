@@ -114,6 +114,16 @@ export function SoloGame() {
 
   // Reveal the title to the floating audio bar once the round ends.
   const setGlobalTrackInfo = useAudioStore((s) => s.setGlobalTrackInfo);
+
+  // Drop any audio that was registered by a different game mode so
+  // the floating remote bar doesn't double up with the in-page
+  // controls.
+  const unregisterAudio = useAudioStore((s) => s.unregisterAudio);
+  useEffect(() => {
+    const origin = useAudioStore.getState().globalOriginPath;
+    if (origin && origin !== "/solo") unregisterAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (!done || !current) return;
     setGlobalTrackInfo(current.title, current.artist);

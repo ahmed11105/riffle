@@ -22,6 +22,7 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useAudioStore } from "@/lib/store/audio";
+import { copyText } from "@/lib/clipboard";
 import { usePhaseTimer } from "@/hooks/usePhaseTimer";
 import { CLIP_LEVELS, type ClipLevel } from "@/lib/game/wager";
 import type { HintKind } from "@/lib/riffs/hints";
@@ -52,6 +53,15 @@ export function RoomGame({ code }: { code: string }) {
   // Reveal the title on the floating audio bar once the room enters the
   // reveal phase, so navigating away no longer says "Mystery track".
   const setGlobalTrackInfo = useAudioStore((s) => s.setGlobalTrackInfo);
+
+  // Drop any audio registered by a different game mode so the
+  // floating remote bar doesn't double up with the room controls.
+  const unregisterAudio = useAudioStore((s) => s.unregisterAudio);
+  useEffect(() => {
+    const origin = useAudioStore.getState().globalOriginPath;
+    if (origin && !origin.startsWith("/rooms/")) unregisterAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (!track) return;
     if (room?.status === "reveal" || room?.status === "finished") {
@@ -568,7 +578,7 @@ export function RoomGame({ code }: { code: string }) {
           <button
             type="button"
             onClick={() =>
-              navigator.clipboard.writeText(`${window.location.origin}/rooms/${code}`)
+              copyText(`${window.location.origin}/rooms/${code}`)
             }
             className="text-[10px] uppercase text-amber-600 hover:text-amber-700"
           >
@@ -1104,11 +1114,11 @@ function CopyInviteButton({ code }: { code: string }) {
         if ((e as Error).name === "AbortError") return;
       }
     }
-    try {
-      await navigator.clipboard.writeText(url);
+    const ok = await copyText(url);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch {}
+    }
   }
 
   return (

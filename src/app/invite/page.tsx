@@ -7,6 +7,7 @@ import { Share2, Check, Gift } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { copyText } from "@/lib/clipboard";
 
 const REWARD = 100;
 
@@ -84,11 +85,11 @@ export default function InvitePage() {
         if ((e as Error).name === "AbortError") return;
       }
     }
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
+    const ok = await copyText(inviteUrl);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch {}
+    }
   }
 
   function maskEmail(email: string): string {

@@ -61,6 +61,16 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   // global audio store so the floating playback bar stops saying
   // "Mystery track" after the player navigates away from /daily.
   const setGlobalTrackInfo = useAudioStore((s) => s.setGlobalTrackInfo);
+
+  // Clear any leftover audio registration from a different game mode
+  // so the floating remote bar doesn't sit on top of the in-page
+  // controls when the player switches mode.
+  const unregisterAudio = useAudioStore((s) => s.unregisterAudio);
+  useEffect(() => {
+    const origin = useAudioStore.getState().globalOriginPath;
+    if (origin && origin !== "/daily") unregisterAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (!done) return;
     setGlobalTrackInfo(realTitle, track.artist);
