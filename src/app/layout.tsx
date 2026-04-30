@@ -14,6 +14,9 @@ import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { AccountButton } from "@/components/AccountButton";
 import { ReferralRedeemer } from "@/components/ReferralRedeemer";
+import { RiffsBalanceFloating } from "@/components/RiffsBalanceFloating";
+import { DailyRiffsManager } from "@/components/DailyRiffsManager";
+import { CoinFlyLayer } from "@/components/CoinFlyLayer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -101,6 +104,13 @@ export default function RootLayout({
             <Suspense>
               <AccountButton variant="floating" />
             </Suspense>
+            <Suspense>
+              <RiffsBalanceFloating />
+            </Suspense>
+            <Suspense>
+              <DailyRiffsManager />
+            </Suspense>
+            <CoinFlyLayer />
             {children}
             <Footer />
             <Suspense>

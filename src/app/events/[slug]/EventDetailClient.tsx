@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
+import { flyCoinsFrom } from "@/lib/coinFly";
 
 type EventRow = {
   id: string;
@@ -72,7 +73,7 @@ export function EventDetailClient({
     };
   }, [user, event.id]);
 
-  async function claim(idx: number) {
+  async function claim(idx: number, sourceEl: HTMLElement | null) {
     if (!user) return;
     setBusyIdx(idx);
     setError(null);
@@ -86,11 +87,14 @@ export function EventDetailClient({
         setError(err.message);
         return;
       }
-      const result = data as { ok?: boolean; reason?: string } | null;
+      const result = data as { ok?: boolean; reason?: string; riffs?: number } | null;
       if (!result?.ok) {
         setError(result?.reason ?? "Could not claim");
         return;
       }
+      const reward =
+        result.riffs ?? event.milestone_thresholds[idx]?.riffs ?? 0;
+      if (reward > 0) flyCoinsFrom(sourceEl, reward);
       setClaims((prev) => [...prev, idx]);
       sfxClaim();
       await refreshProfile();
@@ -158,7 +162,7 @@ export function EventDetailClient({
                 <div className="text-base font-bold">+{m.riffs} Riffs</div>
                 <button
                   type="button"
-                  onClick={() => claim(idx)}
+                  onClick={(e) => claim(idx, e.currentTarget)}
                   disabled={!reached || claimed || busy || !user}
                   className="mt-3 w-full rounded-full border-4 border-stone-900 bg-stone-900 px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-300 disabled:opacity-50"
                 >

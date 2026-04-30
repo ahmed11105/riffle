@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { RiffsIcon } from "@/components/RiffsIcon";
+import { flyCoinsFrom } from "@/lib/coinFly";
 
 const REWARD = 10;
 const AD_SECONDS = 15;
@@ -25,6 +26,7 @@ export function BonusRoundPrompt() {
   const [done, setDone] = useState(false);
   const [state, setState] = useState<"idle" | "watching" | "claimed" | "limit">("idle");
   const [seconds, setSeconds] = useState(AD_SECONDS);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -40,6 +42,7 @@ export function BonusRoundPrompt() {
       (async () => {
         const result = await claimAdReward(REWARD);
         if (result.ok) {
+          flyCoinsFrom(buttonRef.current, REWARD);
           setState("claimed");
           try {
             localStorage.setItem(STORAGE_KEY, dayKey());
@@ -99,6 +102,7 @@ export function BonusRoundPrompt() {
         </div>
       </div>
       <button
+        ref={buttonRef}
         type="button"
         disabled={state === "watching"}
         onClick={() => setState("watching")}

@@ -3,7 +3,6 @@ import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { HomeStats } from "@/components/HomeStats";
 import { HomeHelpLinks } from "@/components/HomeHelpLinks";
-import { LoginCalendar } from "@/components/LoginCalendar";
 import { StarterPackOffer } from "@/components/StarterPackOffer";
 import { ActiveEventBanner } from "@/components/ActiveEventBanner";
 import { MainNav } from "@/components/MainNav";
@@ -47,7 +46,6 @@ export default function Home() {
         <div className="mt-6 w-full">
           <StarterPackOffer />
         </div>
-        <LoginCalendar />
         <HomeHelpLinks />
       </section>
 
