@@ -127,14 +127,16 @@ export function AudioClip({
     Math.min(100, (currentTime / TOTAL_SECONDS) * 100),
   );
   const labelPct = (maxSeconds / TOTAL_SECONDS) * 100;
-  const labelText = maxSeconds === 1 ? "1 second" : `${maxSeconds} seconds`;
+  const labelFull = maxSeconds === 1 ? "1 second" : `${maxSeconds} seconds`;
+  const labelCompact = `${maxSeconds}s`;
 
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-3">
       <ClipProgressBar
         fillPct={fillPct}
         labelPct={labelPct}
-        labelText={labelText}
+        labelFull={labelFull}
+        labelCompact={labelCompact}
       />
       <button
         type="button"
@@ -152,44 +154,25 @@ export function AudioClip({
 
 // Songless-style horizontal progress bar with section dividers at
 // each clip-level boundary, an amber fill that grows during play,
-// and a dark caption at the playhead pointing down with a small
-// triangle. Riffle palette: stone-900 track, amber-400 fill.
+// and a dark caption below the bar with an up-pointing triangle
+// anchoring it to the level's stop point. Riffle palette:
+// stone-900 track, amber-400 fill.
 function ClipProgressBar({
   fillPct,
   labelPct,
-  labelText,
+  labelFull,
+  labelCompact,
 }: {
   fillPct: number;
   labelPct: number;
-  labelText: string;
+  labelFull: string;
+  labelCompact: string;
 }) {
   // Section dividers at every level boundary except 0 and the end.
   const dividers = LEVELS.slice(0, -1).map((s) => (s / TOTAL_SECONDS) * 100);
 
   return (
-    <div className="relative w-full pt-7">
-      {/* Caption pinned at the level's stop point. */}
-      <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2"
-        style={{ left: `min(max(${labelPct}%, 14%), 86%)` }}
-      >
-        <div className="rounded-md bg-stone-900 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-100">
-          {labelText}
-        </div>
-        {/* Down-pointing triangle that visually anchors the caption
-            to the playhead end on the bar. */}
-        <div
-          className="absolute left-1/2 top-full -translate-x-1/2"
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: "5px solid transparent",
-            borderRight: "5px solid transparent",
-            borderTop: "5px solid #1c1917",
-          }}
-        />
-      </div>
-
+    <div className="relative w-full pb-7">
       {/* Track. */}
       <div className="relative h-4 w-full overflow-hidden rounded-full border-2 border-stone-900 bg-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
         {/* Filled portion. */}
@@ -206,6 +189,29 @@ function ClipProgressBar({
             style={{ left: `${pct}%` }}
           />
         ))}
+      </div>
+
+      {/* Caption pinned BELOW the bar at the level's stop point. An
+          up-pointing triangle anchors it visually to the stop. */}
+      <div
+        className="pointer-events-none absolute bottom-0 -translate-x-1/2"
+        style={{ left: `min(max(${labelPct}%, 14%), 86%)` }}
+      >
+        {/* Up-pointing triangle. */}
+        <div
+          className="absolute left-1/2 bottom-full -translate-x-1/2"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: "5px solid transparent",
+            borderRight: "5px solid transparent",
+            borderBottom: "5px solid #1c1917",
+          }}
+        />
+        <div className="whitespace-nowrap rounded-md bg-stone-900 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-100">
+          <span className="sm:hidden">{labelCompact}</span>
+          <span className="hidden sm:inline">{labelFull}</span>
+        </div>
       </div>
     </div>
   );
