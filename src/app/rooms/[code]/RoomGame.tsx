@@ -484,14 +484,16 @@ export function RoomGame({ code }: { code: string }) {
 
   function handleSkip() {
     if (solved || iHaveSkippedAhead) return;
-    sfxSkip();
     if (myLevelIdx >= LEVELS.length - 1) {
+      // Final skip → fail reveal. RevealCard plays the fail cue; suppress
+      // the skip blip so it doesn't stack underneath.
       writeMyGuess({
         clip_level: LEVELS[myLevelIdx] as ClipLevel,
         level_idx: myLevelIdx,
         done: true,
       });
     } else {
+      sfxSkip();
       writeMyGuess({ level_idx: myLevelIdx + 1, done: false });
     }
   }

@@ -157,13 +157,15 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
 
   function handleSkip() {
     if (done) return;
-    sfxSkip();
     const nextArr: Guess[] = [...guesses, { kind: "skipped", value: "" }];
     setGuesses(nextArr);
     setPlaying(false);
     if (levelIdx >= LEVELS.length - 1) {
+      // Final skip → fail reveal. Let RevealCard's fail cue ring out alone
+      // instead of stacking the skip blip on top of it.
       setDone({ correct: false, guesses: nextArr });
     } else {
+      sfxSkip();
       setLevelIdx(levelIdx + 1);
     }
   }

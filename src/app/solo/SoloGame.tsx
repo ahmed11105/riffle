@@ -208,15 +208,17 @@ export function SoloGame() {
 
   function handleSkip() {
     if (!current || done) return;
-    sfxSkip();
     const nextG = [...guesses, "skipped" as const];
     setGuesses(nextG);
     setPlaying(false);
     if (levelIdx >= LEVELS.length - 1) {
+      // Final skip → fail reveal. RevealCard plays the fail cue; suppress
+      // the skip blip so it doesn't stack underneath.
       setDone({ correct: false });
       setStats((s) => ({ ...s, played: s.played + 1 }));
       markPlayed(current.id);
     } else {
+      sfxSkip();
       setLevelIdx(levelIdx + 1);
     }
   }
