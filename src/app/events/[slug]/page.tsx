@@ -1,12 +1,12 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import Link from "next/link";
 import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EventDetailClient } from "./EventDetailClient";
-
-export const dynamic = "force-dynamic";
 
 type EventRow = {
   id: string;
@@ -28,12 +28,17 @@ type LeaderboardRow = {
   tag: number | null;
 };
 
-export default async function EventPage({
-  params,
+// All DB reads live inside this async island so the surrounding shell
+// can prerender. Next 16's cacheComponents requires uncached data
+// (event row + leaderboard, AND `await params`) to be wrapped in
+// Suspense — same pattern /daily uses with TodayTrack.
+async function EventBody({
+  paramsPromise,
 }: {
-  params: Promise<{ slug: string }>;
+  paramsPromise: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  await connection();
+  const { slug } = await paramsPromise;
   const supabase = await createClient();
   const { data: event } = await supabase
     .from("events")
@@ -46,7 +51,6 @@ export default async function EventPage({
   if (!event) notFound();
   const evt = event as EventRow;
 
-  // Top 50 leaderboard via admin client to bypass any RLS join surprises.
   const admin = createAdminClient();
   const { data: rawEntries } = await admin
     .from("event_entries")
@@ -76,18 +80,31 @@ export default async function EventPage({
     });
   }
 
+  return <EventDetailClient event={evt} leaderboard={leaderboard} />;
+}
+
+function EventSkeleton() {
   return (
-    <main
-      className="flex flex-1 flex-col items-center px-6 py-10"
-      style={{
-        background: `radial-gradient(ellipse at top, ${evt.accent_color}30, transparent 60%)`,
-      }}
-    >
+    <div className="mt-8 flex min-h-[240px] w-full max-w-md items-center justify-center text-amber-100/70">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />
+    </div>
+  );
+}
+
+export default function EventPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  return (
+    <main className="flex flex-1 flex-col items-center px-6 py-10">
       <header className="flex w-full max-w-5xl items-center justify-between">
         <Link href="/"><Logo /></Link>
         <MainNav />
       </header>
-      <EventDetailClient event={evt} leaderboard={leaderboard} />
+      <Suspense fallback={<EventSkeleton />}>
+        <EventBody paramsPromise={params} />
+      </Suspense>
     </main>
   );
 }

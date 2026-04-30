@@ -13,7 +13,7 @@ import { StreakRestoreOffer } from "@/components/game/StreakRestoreOffer";
 import { BonusRoundPrompt } from "@/components/game/BonusRoundPrompt";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
-import { sfxSkip } from "@/lib/sfx";
+import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
 import { useAdminMode, resetDailyProgress } from "@/lib/admin";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -150,6 +150,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
     } else if (levelIdx >= LEVELS.length - 1) {
       setDone({ correct: false, guesses: nextArr });
     } else {
+      sfxWrongAttempt();
       setLevelIdx(levelIdx + 1);
     }
   }

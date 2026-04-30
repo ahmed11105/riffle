@@ -14,7 +14,7 @@ import { RiffsBadge } from "@/components/RiffsBadge";
 import type { RiffleTrack } from "@/lib/itunes";
 import { DAILY_POOL, toRiffleTrack } from "@/lib/daily/pick";
 import { fuzzyMatchTitle } from "@/lib/utils";
-import { sfxSkip } from "@/lib/sfx";
+import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import type { HintKind } from "@/lib/riffs/hints";
 import { useAudioStore } from "@/lib/store/audio";
 
@@ -201,6 +201,7 @@ export function SoloGame() {
       setStats((s) => ({ ...s, played: s.played + 1 }));
       markPlayed(current.id);
     } else {
+      sfxWrongAttempt();
       setLevelIdx(levelIdx + 1);
     }
   }

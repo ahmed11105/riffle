@@ -1,71 +1,81 @@
-// Web Audio synthesized SFX. No asset files to ship, no licensing.
-// Each function creates a tiny AudioContext graph and plays a short cue.
+// File-based SFX. Each cue plays a short MP3 from /public/sfx/, with
+// the global audio store driving volume + mute. Files are preloaded
+// once on first play so the click-to-cue latency stays tight.
+//
+// Drop files at public/sfx/{skip,correct,wrong}.mp3. If a file is
+// missing the call no-ops silently — keeps SFX optional during dev.
 
 import { useAudioStore } from "./store/audio";
 
-let ctx: AudioContext | null = null;
-function getCtx(): AudioContext | null {
+type CueName = "skip" | "correct" | "wrong" | "wrong-attempt";
+
+const SOURCES: Record<CueName, string> = {
+  skip: "/sfx/skip.mp3",
+  correct: "/sfx/correct.mp3",
+  // Final fail — round is over, didn't get it. Plays on the
+  // RevealCard. Should feel like a soft "aw, that's the end".
+  wrong: "/sfx/wrong.mp3",
+  // Per-guess miss — still has more attempts. Plays after a wrong
+  // submit when the ladder advances. Should feel like "nope, try
+  // again", not punitive.
+  "wrong-attempt": "/sfx/wrong-attempt.mp3",
+};
+
+// Per-cue base gain. SFX often arrive too hot or too quiet relative
+// to the song clip; tune here so each cue sits well against the
+// preview audio without shouting over it.
+const BASE_VOLUME: Record<CueName, number> = {
+  skip: 0.5,
+  correct: 0.7,
+  wrong: 0.6,
+  "wrong-attempt": 0.45,
+};
+
+const cache: Partial<Record<CueName, HTMLAudioElement>> = {};
+
+function getElement(name: CueName): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
-  if (!ctx) {
-    try {
-      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    } catch {
-      return null;
-    }
+  const cached = cache[name];
+  if (cached) return cached;
+  try {
+    const el = new Audio(SOURCES[name]);
+    el.preload = "auto";
+    cache[name] = el;
+    return el;
+  } catch {
+    return null;
   }
-  if (ctx.state === "suspended") void ctx.resume();
-  return ctx;
 }
 
-type Step = { freq: number; time: number; dur: number; type?: OscillatorType; gain?: number };
-
-function playSequence(steps: Step[]) {
-  const ac = getCtx();
-  if (!ac) return;
+function play(name: CueName) {
+  const el = getElement(name);
+  if (!el) return;
   const userVolume = useAudioStore.getState().effectiveVolume();
   if (userVolume <= 0) return;
-  const master = ac.createGain();
-  master.gain.value = 0.22 * userVolume;
-  master.connect(ac.destination);
-  const now = ac.currentTime;
-  for (const s of steps) {
-    const osc = ac.createOscillator();
-    const g = ac.createGain();
-    osc.type = s.type ?? "sine";
-    osc.frequency.value = s.freq;
-    const start = now + s.time;
-    const end = start + s.dur;
-    g.gain.setValueAtTime(0, start);
-    g.gain.linearRampToValueAtTime(s.gain ?? 0.9, start + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.001, end);
-    osc.connect(g);
-    g.connect(master);
-    osc.start(start);
-    osc.stop(end + 0.02);
-  }
+  // Clone the node so overlapping plays don't cancel each other (e.g.
+  // multiple correct cues stacking up at end of round).
+  try {
+    const node = el.cloneNode(true) as HTMLAudioElement;
+    node.volume = Math.min(1, BASE_VOLUME[name] * userVolume);
+    void node.play().catch(() => {
+      // Autoplay block / missing file — fail silently, the game UX
+      // doesn't depend on the cue landing.
+    });
+  } catch {}
 }
 
-// Skip, a quick neutral blip.
 export function sfxSkip() {
-  playSequence([
-    { freq: 520, time: 0, dur: 0.08, type: "triangle" },
-  ]);
+  play("skip");
 }
 
-// Wrong, a low descending buzz.
 export function sfxWrong() {
-  playSequence([
-    { freq: 220, time: 0, dur: 0.14, type: "sawtooth", gain: 0.6 },
-    { freq: 140, time: 0.12, dur: 0.22, type: "sawtooth", gain: 0.7 },
-  ]);
+  play("wrong");
 }
 
-// Correct, a bright rising arpeggio (C–E–G–C').
+export function sfxWrongAttempt() {
+  play("wrong-attempt");
+}
+
 export function sfxCorrect() {
-  playSequence([
-    { freq: 523.25, time: 0, dur: 0.12, type: "triangle" },
-    { freq: 659.25, time: 0.09, dur: 0.12, type: "triangle" },
-    { freq: 783.99, time: 0.18, dur: 0.14, type: "triangle" },
-    { freq: 1046.5, time: 0.28, dur: 0.24, type: "triangle" },
-  ]);
+  play("correct");
 }

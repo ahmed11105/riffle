@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,45 +14,49 @@ const REWARDS: Record<number, number> = {
   7: 75,
 };
 
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-// Compute the next claim's day index given current state. Mirrors the
-// SQL claim_login_reward logic so the UI shows the right tile pre-claim.
-function nextDayIndex(profile: {
-  login_day_index: number;
-  login_last_claimed_on: string | null;
-}): number {
-  const today = todayUtc();
+// Compute the next claim's day index given current state and today's
+// UTC date. Mirrors the SQL claim_login_reward logic so the UI shows
+// the right tile pre-claim. Pure function — `today` is passed in to
+// keep this hydration-safe.
+function nextDayIndex(
+  profile: {
+    login_day_index: number;
+    login_last_claimed_on: string | null;
+  },
+  today: string,
+): number {
   if (!profile.login_last_claimed_on) return 1;
   if (profile.login_last_claimed_on === today) {
-    // Already claimed today; next is tomorrow's slot.
     return profile.login_day_index >= 7 ? 1 : profile.login_day_index + 1;
   }
-  // Yesterday-style claim.
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterday = new Date(
+    new Date(today + "T00:00:00.000Z").getTime() - 86400000,
+  ).toISOString().slice(0, 10);
   if (profile.login_last_claimed_on === yesterday && profile.login_day_index < 7) {
     return profile.login_day_index + 1;
   }
-  // Missed a day or completed a cycle: restart.
   return 1;
 }
 
 // 7-tile login calendar. Pre-fills past days as claimed, highlights
-// today's tile, dims future days. Compact horizontal strip, fits next
-// to HomeStats.
+// today's tile, dims future days. Renders nothing until mounted so
+// `new Date()` never runs during prerender — Next 16 cacheComponents
+// flags Date calls outside Suspense as blocking-route errors.
 export function LoginCalendar() {
   const { profile, refreshProfile, loading } = useAuth();
   const [busy, setBusy] = useState(false);
   const [justClaimed, setJustClaimed] = useState(false);
+  const [today, setToday] = useState<string | null>(null);
 
-  const today = todayUtc();
-  const claimedToday = profile?.login_last_claimed_on === today || justClaimed;
+  useEffect(() => {
+    setToday(new Date().toISOString().slice(0, 10));
+  }, []);
+
+  const claimedToday = (today != null && profile?.login_last_claimed_on === today) || justClaimed;
   const upcomingDay = useMemo(() => {
-    if (!profile) return 1;
-    return nextDayIndex(profile);
-  }, [profile]);
+    if (!profile || !today) return 1;
+    return nextDayIndex(profile, today);
+  }, [profile, today]);
 
   // The tile to highlight today: if not claimed, it's upcomingDay; if
   // claimed, it's the day they just landed on (login_day_index).
@@ -76,7 +80,7 @@ export function LoginCalendar() {
     }
   }
 
-  if (loading || !profile) return null;
+  if (loading || !profile || !today) return null;
 
   return (
     <div className="mt-8 w-full max-w-md rounded-2xl border-4 border-stone-900 bg-stone-900/50 p-4 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">

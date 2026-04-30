@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { RiffleTrack } from "@/lib/itunes";
 import { loadLocalPlayer, saveLocalPlayer, PHASE_DURATIONS, type GuessRecord } from "@/lib/rooms";
 import { fuzzyMatchTitle } from "@/lib/utils";
-import { sfxSkip } from "@/lib/sfx";
+import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useAudioStore } from "@/lib/store/audio";
 import { copyText } from "@/lib/clipboard";
@@ -476,6 +476,7 @@ export function RoomGame({ code }: { code: string }) {
           done: true,
         });
       } else {
+        sfxWrongAttempt();
         writeMyGuess({ value, level_idx: myLevelIdx + 1, done: false });
       }
     }
