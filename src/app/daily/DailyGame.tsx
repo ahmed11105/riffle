@@ -15,7 +15,6 @@ import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
-import { useAdminMode, resetDailyProgress } from "@/lib/admin";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
@@ -172,14 +171,6 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
 
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-6">
-      <AdminBar
-        onResetDaily={() => {
-          resetDailyProgress();
-          setLevelIdx(0);
-          setGuesses([]);
-          setDone(null);
-        }}
-      />
       <StreakBadge />
       <StreakRestoreOffer />
       <ClipLadder currentLevel={current} guesses={ladderStates} />
@@ -219,32 +210,6 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           <SaveProgressNudge />
         </>
       )}
-    </div>
-  );
-}
-
-function AdminBar({ onResetDaily }: { onResetDaily: () => void }) {
-  const [on, setAdmin] = useAdminMode();
-  if (!on) return null;
-  return (
-    <div className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-amber-400 bg-amber-400/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-200">
-      <span>🛠 Admin mode</span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onResetDaily}
-          className="rounded-full border-2 border-stone-900 bg-amber-400 px-3 py-1 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
-        >
-          Reset daily
-        </button>
-        <button
-          type="button"
-          onClick={() => setAdmin(false)}
-          className="rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
-        >
-          Exit
-        </button>
-      </div>
     </div>
   );
 }

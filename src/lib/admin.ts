@@ -202,3 +202,23 @@ export function resetDailyProgress() {
   for (const k of remove) window.localStorage.removeItem(k);
   window.dispatchEvent(new CustomEvent("riffle:daily-reset"));
 }
+
+// Wipe everything Riffle stores in localStorage so the device behaves
+// like a fresh install — solo played history, login calendar dismissals,
+// starter pack dismissal, daily progress, finished states, etc. Pairs
+// with the server-side /api/admin/reset-progress endpoint to give a
+// truly fresh-player experience for testing.
+export function resetClientProgress() {
+  if (typeof window === "undefined") return;
+  const remove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (!key) continue;
+    // Keep admin flags (they enable this very tool) and the audio
+    // volume preference. Wipe everything else under the riffle: prefix.
+    if (key === KEY || key === SECRET_KEY || key === CONFIG_KEY) continue;
+    if (key.startsWith("riffle:")) remove.push(key);
+  }
+  for (const k of remove) window.localStorage.removeItem(k);
+  window.dispatchEvent(new CustomEvent("riffle:daily-reset"));
+}
