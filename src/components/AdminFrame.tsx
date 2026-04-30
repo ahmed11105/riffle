@@ -108,36 +108,43 @@ export function AdminFrame() {
           />
         </button>
         {open && (
+          // The menu container starts flush with the pill (top-full)
+          // and pushes the visual card down with transparent pt-2.
+          // The padding sits INSIDE the wrapper's hover region, so the
+          // cursor moving from pill → menu never crosses dead space and
+          // onMouseLeave doesn't accidentally fire mid-traverse.
           <div
             role="menu"
-            className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-stone-900 bg-stone-900 text-amber-100 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]"
+            className="absolute left-1/2 top-full -translate-x-1/2 pt-2"
           >
-            <button
-              type="button"
-              role="menuitem"
-              disabled={busy !== null}
-              onClick={() => callReset("daily")}
-              className="block w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
-            >
-              {busy === "daily" ? "Resetting…" : "Reset daily progress"}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              disabled={busy !== null}
-              onClick={() => callReset("overall")}
-              className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
-            >
-              {busy === "overall" ? "Resetting…" : "Reset overall progress"}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={exit}
-              className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider text-amber-300 hover:bg-stone-800"
-            >
-              Exit admin mode
-            </button>
+            <div className="w-56 overflow-hidden rounded-xl border-2 border-stone-900 bg-stone-900 text-amber-100 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy !== null}
+                onClick={() => callReset("daily")}
+                className="block w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
+              >
+                {busy === "daily" ? "Resetting…" : "Reset daily progress"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy !== null}
+                onClick={() => callReset("overall")}
+                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
+              >
+                {busy === "overall" ? "Resetting…" : "Reset overall progress"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={exit}
+                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider text-amber-300 hover:bg-stone-800"
+              >
+                Exit admin mode
+              </button>
+            </div>
           </div>
         )}
       </div>
