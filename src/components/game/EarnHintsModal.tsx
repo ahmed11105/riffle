@@ -6,6 +6,7 @@ import { HINT_ICONS, HINT_KINDS, HINT_LABELS, type HintKind } from "@/lib/riffs/
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { AdSlot } from "@/components/AdSlot";
 import { AD_SLOTS } from "@/lib/adslots";
+import { sfxClaim } from "@/lib/sfx";
 
 // Forced 5-second placeholder "ad" that grants the player one free
 // hint of the kind they selected. Same shell as SoloAdBreak; once
@@ -72,6 +73,7 @@ export function EarnHintsModal({
             mergeProfile({ hint_inventory: json.hint_inventory });
           }
           if (chosen) onEarned?.(chosen);
+          sfxClaim();
           setPhase("rewarded");
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Network error.";

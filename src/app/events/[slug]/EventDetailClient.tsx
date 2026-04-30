@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { sfxClaim } from "@/lib/sfx";
 
 type EventRow = {
   id: string;
@@ -91,6 +92,7 @@ export function EventDetailClient({
         return;
       }
       setClaims((prev) => [...prev, idx]);
+      sfxClaim();
       await refreshProfile();
     } finally {
       setBusyIdx(null);

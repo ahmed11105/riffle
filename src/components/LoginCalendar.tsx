@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { sfxClaim } from "@/lib/sfx";
 
 const REWARDS: Record<number, number> = {
   1: 5,
@@ -73,7 +74,10 @@ export function LoginCalendar() {
         return;
       }
       const result = data as { ok?: boolean } | null;
-      if (result?.ok) setJustClaimed(true);
+      if (result?.ok) {
+        setJustClaimed(true);
+        sfxClaim();
+      }
       await refreshProfile();
     } finally {
       setBusy(false);

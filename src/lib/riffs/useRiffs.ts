@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
+import { sfxClaim, sfxSpend } from "@/lib/sfx";
 
 export type SpendResult =
   | { ok: true; newBalance: number }
@@ -39,6 +40,7 @@ export function useRiffs() {
         }
         await refreshProfile();
         track(EVENTS.HINT_PURCHASED, { amount, reason, ref });
+        sfxSpend();
         return { ok: true, newBalance: data as number };
       } finally {
         setSpending(false);
@@ -61,6 +63,7 @@ export function useRiffs() {
         }
         await refreshProfile();
         track(EVENTS.RIFFS_EARNED_AD, { amount });
+        sfxClaim();
         return { ok: true, newBalance: data as number };
       } finally {
         setSpending(false);

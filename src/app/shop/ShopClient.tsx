@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -12,6 +12,7 @@ import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
 import { useAdminMode } from "@/lib/admin";
 import { MagicLinkForm } from "@/components/MagicLinkForm";
+import { sfxCorrect } from "@/lib/sfx";
 
 type Pack = {
   slug: string;
@@ -62,6 +63,12 @@ export function ShopClient({
   const showProSuccess = searchParams.get("pro_ok") === "1";
   const showProCancelled = searchParams.get("pro_cancelled") === "1";
   const upsell = searchParams.get("upsell");
+
+  // Celebrate Stripe success redirects with the win cue. Run once per
+  // mount per redirect — refreshing without the param won't replay it.
+  useEffect(() => {
+    if (showSuccess || showProSuccess) sfxCorrect();
+  }, [showSuccess, showProSuccess]);
 
   async function unlockPack(slug: string) {
     if (!user) return;

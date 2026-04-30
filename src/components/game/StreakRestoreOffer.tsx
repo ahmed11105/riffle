@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { sfxClaim } from "@/lib/sfx";
 
 const RESTORE_COST = 100;
 
@@ -44,6 +45,7 @@ export function StreakRestoreOffer() {
         setError(result?.reason === "not_eligible" ? "No longer eligible" : "Restore failed");
         return;
       }
+      sfxClaim();
       await Promise.all([refreshProfile(), refreshStreak()]);
     } finally {
       setBusy(false);

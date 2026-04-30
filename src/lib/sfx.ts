@@ -7,7 +7,7 @@
 
 import { useAudioStore } from "./store/audio";
 
-type CueName = "skip" | "correct" | "wrong" | "wrong-attempt";
+type CueName = "skip" | "correct" | "wrong" | "wrong-attempt" | "claim" | "spend";
 
 const SOURCES: Record<CueName, string> = {
   skip: "/sfx/skip.mp3",
@@ -19,6 +19,13 @@ const SOURCES: Record<CueName, string> = {
   // submit when the ladder advances. Should feel like "nope, try
   // again", not punitive.
   "wrong-attempt": "/sfx/wrong-attempt.mp3",
+  // Earning Riffs — daily login claim, event milestone, ad reward,
+  // banked hint, restored streak. A short rewarding pickup chime.
+  claim: "/sfx/claim.mp3",
+  // Spending Riffs — buy hint, buy freeze, unlock pack. A snappy
+  // organic UI hit, intentionally brief so frequent spends don't
+  // become noisy.
+  spend: "/sfx/spend.mp3",
 };
 
 // Per-cue base gain. SFX often arrive too hot or too quiet relative
@@ -29,6 +36,8 @@ const BASE_VOLUME: Record<CueName, number> = {
   correct: 0.7,
   wrong: 0.6,
   "wrong-attempt": 0.45,
+  claim: 0.6,
+  spend: 0.5,
 };
 
 const cache: Partial<Record<CueName, HTMLAudioElement>> = {};
@@ -78,4 +87,12 @@ export function sfxWrongAttempt() {
 
 export function sfxCorrect() {
   play("correct");
+}
+
+export function sfxClaim() {
+  play("claim");
+}
+
+export function sfxSpend() {
+  play("spend");
 }
