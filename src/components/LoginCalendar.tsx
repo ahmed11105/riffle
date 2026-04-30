@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
+import { RiffsIcon } from "@/components/RiffsIcon";
 
 const REWARDS: Record<number, number> = {
   1: 5,
@@ -105,25 +106,28 @@ export function LoginCalendar() {
       <div className="mb-3 grid grid-cols-7 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
           const isHighlight = day === highlightDay;
+          const claimable = isHighlight && !claimedToday;
           const isPast = claimedToday ? day <= (profile?.login_day_index ?? 0) : day < upcomingDay;
           const reward = REWARDS[day];
+          // Claimable = green emboss (raised, lighter text). Past =
+          // dim. Future = neutral. Day 7 keeps a subtle amber ring as
+          // the "grand prize" hint regardless of state.
+          const tileClass = claimable
+            ? "border-emerald-700 bg-emerald-500 text-emerald-50 shadow-[0_3px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.5),inset_0_-2px_0_0_rgba(0,0,0,0.18)]"
+            : isPast
+              ? "border-stone-800 bg-stone-800 text-amber-100/40"
+              : "border-stone-800 bg-stone-900 text-amber-100/70";
           return (
             <div
               key={day}
               className={[
                 "flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 py-2 text-center transition",
-                isHighlight && !claimedToday
-                  ? "border-amber-400 bg-amber-400 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.7)]"
-                  : isPast
-                    ? "border-stone-800 bg-stone-800 text-amber-100/40"
-                    : "border-stone-800 bg-stone-900 text-amber-100/70",
+                tileClass,
                 day === 7 ? "ring-2 ring-amber-300/40" : "",
               ].join(" ")}
             >
-              <span className="text-[9px] font-black uppercase tracking-wider opacity-60">
-                D{day}
-              </span>
-              <span className={`text-xs font-black ${day === 7 ? "text-amber-200" : ""} ${isHighlight && !claimedToday ? "text-stone-900" : ""}`}>
+              <RiffsIcon size={14} className={claimable ? "" : isPast ? "opacity-40" : "opacity-70"} />
+              <span className={`text-xs font-black ${day === 7 && !claimable ? "text-amber-200" : ""}`}>
                 {reward}
               </span>
             </div>
@@ -134,8 +138,18 @@ export function LoginCalendar() {
         type="button"
         onClick={handleClaim}
         disabled={claimedToday || busy}
-        className="w-full rounded-full border-4 border-stone-900 bg-amber-400 px-4 py-2 text-sm font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:cursor-not-allowed disabled:opacity-40"
+        className={[
+          "relative flex w-full items-center justify-center gap-2 rounded-full border-4 border-stone-900 px-4 py-2 text-sm font-black uppercase tracking-wider shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:cursor-not-allowed disabled:opacity-40",
+          claimedToday
+            ? "bg-stone-700 text-amber-100/70"
+            : "bg-emerald-500 text-emerald-50 shadow-[0_3px_0_0_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.4)]",
+        ].join(" ")}
       >
+        {!claimedToday && (
+          <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
+            <RiffsIcon size={12} />
+          </span>
+        )}
         {claimedToday
           ? "Come back tomorrow"
           : busy

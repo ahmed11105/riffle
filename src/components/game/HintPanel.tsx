@@ -15,6 +15,7 @@ import {
   type HintKind,
 } from "@/lib/riffs/hints";
 import { useRiffs } from "@/lib/riffs/useRiffs";
+import { RiffsIcon } from "@/components/RiffsIcon";
 import { useAdminMode } from "@/lib/admin";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { EarnHintsModal } from "@/components/game/EarnHintsModal";
@@ -271,14 +272,17 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
                   {isLetters ? "Revealed" : "Used"}
                 </span>
               ) : (
-                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
-                  {adminOn
-                    ? "Free"
-                    : banked > 0
-                      ? "Free"
-                      : isBuyingThis
-                        ? "…"
-                        : `${cost} Riffs`}
+                <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider opacity-70">
+                  {adminOn || banked > 0 ? (
+                    "Free"
+                  ) : isBuyingThis ? (
+                    "…"
+                  ) : (
+                    <>
+                      <span>{cost}</span>
+                      <RiffsIcon size={11} />
+                    </>
+                  )}
                 </span>
               )}
             </button>

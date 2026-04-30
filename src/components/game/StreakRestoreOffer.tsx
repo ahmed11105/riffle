@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
+import { RiffsIcon } from "@/components/RiffsIcon";
 
 const RESTORE_COST = 100;
 
@@ -67,8 +68,11 @@ export function StreakRestoreOffer() {
         type="button"
         disabled={!canAfford || busy}
         onClick={handleRestore}
-        className="w-full rounded-full border-4 border-stone-900 bg-stone-900 px-5 py-2 text-sm font-black uppercase tracking-wider text-amber-300 shadow-[0_3px_0_0_rgba(0,0,0,0.7)] transition active:translate-y-1 active:shadow-[0_1px_0_0_rgba(0,0,0,0.7)] disabled:opacity-50"
+        className="relative flex w-full items-center justify-center gap-2 rounded-full border-4 border-stone-900 bg-stone-900 px-5 py-2 text-sm font-black uppercase tracking-wider text-amber-300 shadow-[0_3px_0_0_rgba(0,0,0,0.7)] transition active:translate-y-1 active:shadow-[0_1px_0_0_rgba(0,0,0,0.7)] disabled:opacity-50"
       >
+        <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
+          <RiffsIcon size={12} />
+        </span>
         {busy ? "Restoring…" : `Restore — ${RESTORE_COST} Riffs`}
       </button>
       {!canAfford && (

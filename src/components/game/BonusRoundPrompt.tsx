@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
+import { RiffsIcon } from "@/components/RiffsIcon";
 
 const REWARD = 10;
 const AD_SECONDS = 15;
@@ -101,8 +102,13 @@ export function BonusRoundPrompt() {
         type="button"
         disabled={state === "watching"}
         onClick={() => setState("watching")}
-        className="mt-3 w-full rounded-full border-4 border-stone-900 bg-amber-400 px-4 py-2 text-sm font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+        className="relative mt-3 flex w-full items-center justify-center gap-2 rounded-full border-4 border-stone-900 bg-amber-400 px-4 py-2 text-sm font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
       >
+        {state !== "watching" && (
+          <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
+            <RiffsIcon size={12} />
+          </span>
+        )}
         {state === "watching" ? `Watching… ${seconds}s` : `Watch & claim +${REWARD} Riffs`}
       </button>
     </div>
