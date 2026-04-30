@@ -9,6 +9,11 @@ import { flyCoinsFrom } from "@/lib/coinFly";
 import { CloseButton } from "@/components/CloseButton";
 import { RiffsIcon } from "@/components/RiffsIcon";
 import { OPEN_TOURNAMENT_EVENT } from "@/lib/tournament";
+import {
+  applyTournamentEntryOverlay,
+  saveSim,
+  useSimulation,
+} from "@/lib/simulation";
 
 type ActiveEvent = {
   id: string;
@@ -41,12 +46,14 @@ function formatTimeLeft(endIso: string): string {
 // quick "what can I claim right now" surface.
 export function TournamentManager() {
   const { user, refreshProfile } = useAuth();
+  const sim = useSimulation();
   const [open, setOpen] = useState(false);
   const [event, setEvent] = useState<ActiveEvent | null>(null);
-  const [entry, setEntry] = useState<Entry | null>(null);
+  const [rawEntry, setRawEntry] = useState<Entry | null>(null);
   const [busyIdx, setBusyIdx] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const entry = applyTournamentEntryOverlay(rawEntry, sim);
 
   // Fetch active event + the player's entry. Refetched whenever the
   // modal opens so the milestones are fresh after a recent claim.
@@ -66,7 +73,7 @@ export function TournamentManager() {
           .eq("event_id", row.id)
           .eq("user_id", user.id)
           .maybeSingle();
-        if (!cancelled) setEntry(entryData ?? { score: 0, milestone_claims: [] });
+        if (!cancelled) setRawEntry(entryData ?? { score: 0, milestone_claims: [] });
       }
     })();
     return () => {
@@ -105,6 +112,28 @@ export function TournamentManager() {
     setBusyIdx(idx);
     setError(null);
     try {
+      const reward = event.milestone_thresholds[idx]?.riffs ?? 0;
+
+      if (sim.active) {
+        // Sim path: patch the overlay, no DB write.
+        if (reward > 0) flyCoinsFrom(sourceEl, reward);
+        sfxClaim();
+        const prevEntry = entry ?? { score: 0, milestone_claims: [] };
+        const next = {
+          ...sim,
+          tournament: {
+            ...sim.tournament,
+            milestone_claims: [...prevEntry.milestone_claims, idx],
+          },
+          profile: {
+            ...sim.profile,
+            coin_balance: (sim.profile.coin_balance ?? 0) + reward,
+          },
+        };
+        saveSim(next);
+        return;
+      }
+
       const supabase = createClient();
       const { data, error: err } = await supabase.rpc("claim_event_milestone", {
         p_event_id: event.id,
@@ -119,10 +148,10 @@ export function TournamentManager() {
         setError(result?.reason ?? "Could not claim");
         return;
       }
-      const reward = result.riffs ?? event.milestone_thresholds[idx]?.riffs ?? 0;
-      if (reward > 0) flyCoinsFrom(sourceEl, reward);
+      const earned = result.riffs ?? reward;
+      if (earned > 0) flyCoinsFrom(sourceEl, earned);
       sfxClaim();
-      setEntry((prev) =>
+      setRawEntry((prev) =>
         prev ? { ...prev, milestone_claims: [...prev.milestone_claims, idx] } : prev,
       );
       await refreshProfile();

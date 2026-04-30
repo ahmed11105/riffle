@@ -9,6 +9,7 @@ import {
   type RibbonIconAppearance,
 } from "@/components/ribbon/RibbonDailyButton";
 import { openTournament } from "@/lib/tournament";
+import { applyTournamentEntryOverlay, useSimulation } from "@/lib/simulation";
 
 type ActiveEvent = {
   id: string;
@@ -34,8 +35,10 @@ type Entry = { score: number; milestone_claims: number[] };
 // pattern as the Daily button.
 export function RibbonTournamentButton() {
   const { user } = useAuth();
+  const sim = useSimulation();
   const [event, setEvent] = useState<ActiveEvent | null>(null);
-  const [entry, setEntry] = useState<Entry | null>(null);
+  const [rawEntry, setRawEntry] = useState<Entry | null>(null);
+  const entry = applyTournamentEntryOverlay(rawEntry, sim);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +55,7 @@ export function RibbonTournamentButton() {
           .eq("event_id", row.id)
           .eq("user_id", user.id)
           .maybeSingle();
-        if (!cancelled) setEntry(entryData ?? { score: 0, milestone_claims: [] });
+        if (!cancelled) setRawEntry(entryData ?? { score: 0, milestone_claims: [] });
       }
     })();
     return () => {

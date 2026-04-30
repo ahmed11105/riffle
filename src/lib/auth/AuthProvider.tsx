@@ -11,6 +11,11 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import {
+  applyProfileOverlay,
+  applyStreakOverlay,
+  useSimulation,
+} from "@/lib/simulation";
 
 export type Profile = {
   id: string;
@@ -216,10 +221,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAnonymous = !!user?.is_anonymous;
+
+  // Simulation overlay. When admin mode is on AND a sim state is
+  // active, real profile / streak rows get merged with simulated
+  // overrides before being handed to the rest of the app. Real DB
+  // rows are NOT touched — this is purely cosmetic for testing UX
+  // at different stages.
+  const sim = useSimulation();
+  const overlaidProfile = useMemo(
+    () => applyProfileOverlay(profile, sim),
+    [profile, sim],
+  );
+  const overlaidStreak = useMemo(
+    () => applyStreakOverlay(streak, sim),
+    [streak, sim],
+  );
+
+  const effectiveProfile = overlaidProfile;
+  const effectiveStreak = overlaidStreak;
   const isPro = (() => {
-    if (!profile?.is_pro) return false;
-    if (!profile.pro_current_period_end) return true;
-    return new Date(profile.pro_current_period_end).getTime() > Date.now();
+    if (!effectiveProfile?.is_pro) return false;
+    if (!effectiveProfile.pro_current_period_end) return true;
+    return new Date(effectiveProfile.pro_current_period_end).getTime() > Date.now();
   })();
 
   // Pro perk: 1 streak freeze auto-granted every 7 days, capped at 2.
@@ -246,8 +269,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         session,
-        profile,
-        streak,
+        profile: effectiveProfile,
+        streak: effectiveStreak,
         loading,
         isAnonymous,
         isPro,

@@ -8,6 +8,7 @@ import { flyCoinsFrom } from "@/lib/coinFly";
 import { CloseButton } from "@/components/CloseButton";
 import { RiffsIcon } from "@/components/RiffsIcon";
 import { OPEN_DAILY_EVENT } from "@/lib/dailyRiffs";
+import { saveSim, useSimulation } from "@/lib/simulation";
 
 const REWARDS: Record<number, number> = {
   1: 5,
@@ -54,6 +55,7 @@ function nextDayIndex(
 // come back.
 export function DailyRiffsManager() {
   const { profile, refreshProfile, loading } = useAuth();
+  const sim = useSimulation();
   const [today, setToday] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -98,6 +100,29 @@ export function DailyRiffsManager() {
     if (!profile || busy || claimedToday) return;
     setBusy(true);
     try {
+      // Simulation path: never hit the RPC (would mutate the real
+      // DB). Instead patch the sim state to look like the player
+      // just claimed and let the UI react via the overlay.
+      if (sim.active) {
+        const amount = REWARDS[upcomingDay];
+        flyCoinsFrom(claimTileRef.current, amount);
+        sfxClaim();
+        const next = {
+          ...sim,
+          profile: {
+            ...sim.profile,
+            login_day_index: upcomingDay,
+            login_last_claimed_on: today,
+            coin_balance: (sim.profile.coin_balance ?? profile.coin_balance ?? 0) + amount,
+          },
+        };
+        saveSim(next);
+        setJustClaimed(true);
+        markAutoShown();
+        window.setTimeout(() => setOpen(false), 1500);
+        return;
+      }
+
       const supabase = createClient();
       const { data, error } = await supabase.rpc("claim_login_reward");
       if (error) {

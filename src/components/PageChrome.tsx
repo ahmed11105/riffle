@@ -5,6 +5,7 @@ import { MainNav } from "@/components/MainNav";
 import { RibbonDailyButton } from "@/components/ribbon/RibbonDailyButton";
 import { RibbonTournamentButton } from "@/components/ribbon/RibbonTournamentButton";
 import { RibbonRiffsBalance } from "@/components/ribbon/RibbonRiffsBalance";
+import { SimulationBanner } from "@/components/SimulationBanner";
 
 // Global page chrome. Two stacked rows:
 //   Row 1 — Logo + MainNav  (was per-page <header> on every page)
@@ -31,6 +32,7 @@ export function PageChrome() {
         </div>
         <RibbonRiffsBalance />
       </div>
+      <SimulationBanner />
     </header>
   );
 }

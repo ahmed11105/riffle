@@ -10,6 +10,7 @@ import {
   type AdminConfig,
   type OverrideTrack,
 } from "@/lib/admin";
+import { SimulatorPanel } from "@/app/admin/SimulatorPanel";
 import {
   DAILY_POOL,
   dayKeyFor,
@@ -278,6 +279,7 @@ export function AdminDashboard() {
 
   return (
     <div className="flex w-full max-w-6xl flex-col gap-5">
+      <SimulatorPanel />
       {/* Top row: settings */}
       <div className="grid w-full gap-5 md:grid-cols-2">
         <Card title="Pool source">
