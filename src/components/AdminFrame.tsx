@@ -10,18 +10,6 @@ import {
   useAdminMode,
 } from "@/lib/admin";
 
-const SECRET_KEY = "riffle:admin:secret";
-
-function promptForSecret(): string | null {
-  if (typeof window === "undefined") return null;
-  const next = window.prompt(
-    "Enter admin secret (matches ADMIN_SECRET env on Vercel):",
-  );
-  if (!next) return null;
-  window.localStorage.setItem(SECRET_KEY, next);
-  return next;
-}
-
 // Floating admin pill, always available while admin mode is on. Click
 // (or hover) the pill to drop a menu with reset options + exit. The
 // reset options pair the in-browser localStorage wipe with a server
@@ -29,6 +17,10 @@ function promptForSecret(): string | null {
 // useful for testing the brand-new-player path (login calendar,
 // starter pack offer, streak from 0, etc.) without making a new
 // account.
+//
+// Reset Everything is gated behind a confirm dialog because it nukes
+// every per-user record server-side (Riffs, hint inventory, all
+// daily_results, event_entries, pack unlocks, ad grants).
 export function AdminFrame() {
   const [on, setAdmin] = useAdminMode();
   const pathname = usePathname();
@@ -36,9 +28,11 @@ export function AdminFrame() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<"daily" | "overall" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Close the menu on outside click.
+  // Close the menu on outside click. The confirm dialog has its own
+  // backdrop so we don't dismiss it from this listener.
   useEffect(() => {
     if (!open) return;
     function handle(e: MouseEvent) {
@@ -74,18 +68,10 @@ export function AdminFrame() {
 
   async function callReset(kind: "daily" | "overall") {
     setBusy(kind);
+    setOpen(false);
+    setConfirming(false);
     try {
-      let res = await postReset(kind);
-      // 401 = stored secret doesn't match server. Prompt for the right
-      // one, save it, and retry once before giving up.
-      if (res.status === 401) {
-        const updated = promptForSecret();
-        if (!updated) {
-          setToast("Reset cancelled");
-          return;
-        }
-        res = await postReset(kind);
-      }
+      const res = await postReset(kind);
       const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
         setToast(json.error ? `Reset failed: ${json.error}` : "Reset failed");
@@ -98,7 +84,6 @@ export function AdminFrame() {
         resetClientProgress();
         setToast("Overall progress reset");
       }
-      setOpen(false);
       // Hard reload so every component (auth, streak, login calendar,
       // etc.) re-fetches its server state instead of holding stale
       // client memory.
@@ -108,10 +93,9 @@ export function AdminFrame() {
     }
   }
 
-  function updateSecret() {
-    const next = promptForSecret();
+  function onResetEverythingClick() {
     setOpen(false);
-    setToast(next ? "Admin secret updated" : "Cancelled");
+    setConfirming(true);
   }
 
   return (
@@ -157,24 +141,16 @@ export function AdminFrame() {
                 onClick={() => callReset("daily")}
                 className="block w-full px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
               >
-                {busy === "daily" ? "Resetting…" : "Reset daily progress"}
+                {busy === "daily" ? "Resetting…" : "Reset Daily"}
               </button>
               <button
                 type="button"
                 role="menuitem"
                 disabled={busy !== null}
-                onClick={() => callReset("overall")}
-                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
+                onClick={onResetEverythingClick}
+                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider text-rose-300 hover:bg-stone-800 disabled:opacity-50"
               >
-                {busy === "overall" ? "Resetting…" : "Reset overall progress"}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={updateSecret}
-                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800"
-              >
-                Update admin secret
+                {busy === "overall" ? "Resetting…" : "Reset Everything"}
               </button>
               <button
                 type="button"
@@ -188,6 +164,46 @@ export function AdminFrame() {
           </div>
         )}
       </div>
+
+      {confirming && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm full reset"
+          className="fixed inset-0 z-[103] flex items-center justify-center bg-stone-950/80 px-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-sm rounded-3xl border-4 border-stone-900 bg-stone-50 p-6 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
+            <h2 className="text-lg font-black uppercase tracking-wider">
+              Reset everything?
+            </h2>
+            <p className="mt-2 text-sm font-bold text-stone-700">
+              This wipes Riffs, hint inventory, login calendar, starter pack,
+              streak (and freezes), all daily results, event scores, pack
+              unlocks, and ad grants. Pro subscription is left alone. The
+              page reloads after.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={busy !== null}
+                className="flex-1 rounded-full border-4 border-stone-900 bg-stone-50 px-4 py-2 text-sm font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => callReset("overall")}
+                disabled={busy !== null}
+                className="flex-1 rounded-full border-4 border-stone-900 bg-rose-500 px-4 py-2 text-sm font-black uppercase tracking-wider text-stone-50 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
+              >
+                {busy === "overall" ? "Resetting…" : "Reset Everything"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div className="fixed left-1/2 top-12 z-[102] -translate-x-1/2 rounded-full border-2 border-stone-900 bg-emerald-300 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
           {toast}

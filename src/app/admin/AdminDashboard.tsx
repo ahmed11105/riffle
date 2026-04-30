@@ -310,6 +310,8 @@ export function AdminDashboard() {
         </Card>
       </div>
 
+      <AdminSecretEditor />
+
       {/* Main editor: upcoming + picker side-by-side */}
       <div className="grid w-full items-start gap-5 md:grid-cols-2">
         {/* LEFT: upcoming dailies */}
@@ -1166,5 +1168,81 @@ function Card({
       </div>
       {children}
     </div>
+  );
+}
+
+const ADMIN_SECRET_KEY = "riffle:admin:secret";
+
+// Editor for the locally-stored admin secret. Lives on /admin so the
+// dropdown stays clean. The secret value never leaves the browser —
+// it's only sent as Authorization: Bearer <secret> on admin API calls.
+function AdminSecretEditor() {
+  const [stored, setStored] = useState("");
+  const [draft, setDraft] = useState("");
+  const [show, setShow] = useState(false);
+  const [savedJustNow, setSavedJustNow] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const v = window.localStorage.getItem(ADMIN_SECRET_KEY) ?? "";
+    setStored(v);
+    setDraft(v);
+  }, []);
+
+  function save() {
+    if (typeof window === "undefined") return;
+    if (!draft) {
+      window.localStorage.removeItem(ADMIN_SECRET_KEY);
+    } else {
+      window.localStorage.setItem(ADMIN_SECRET_KEY, draft);
+    }
+    setStored(draft);
+    setSavedJustNow(true);
+    setTimeout(() => setSavedJustNow(false), 1800);
+  }
+
+  const dirty = draft !== stored;
+  const masked = stored
+    ? `${stored.slice(0, 4)}…${stored.slice(-4)} (${stored.length} chars)`
+    : "Not set";
+
+  return (
+    <Card title="Admin secret">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-stone-600">
+          Sent as <code className="font-mono">Authorization: Bearer …</code>{" "}
+          on every admin write API call. Must match the{" "}
+          <code className="font-mono">ADMIN_SECRET</code> env var on Vercel.
+          Stored only in this browser.
+        </p>
+        <div className="text-xs font-bold text-stone-700">
+          Currently saved: <span className="font-mono">{masked}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type={show ? "text" : "password"}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Paste secret here"
+            className="min-w-0 flex-1 rounded-full border-2 border-stone-900 bg-stone-50 px-4 py-2 font-mono text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((p) => !p)}
+            className="rounded-full border-2 border-stone-900 bg-stone-100 px-3 py-2 text-xs font-black uppercase tracking-wider text-stone-900"
+          >
+            {show ? "Hide" : "Show"}
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={!dirty}
+            className="rounded-full border-2 border-stone-900 bg-amber-400 px-4 py-2 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
+          >
+            {savedJustNow ? "Saved ✓" : dirty ? "Save" : "Up to date"}
+          </button>
+        </div>
+      </div>
+    </Card>
   );
 }
