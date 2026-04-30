@@ -697,7 +697,12 @@ export function RoomGame({ code }: { code: string }) {
               <HintPanel
                 track={track}
                 revealed={hints}
-                onReveal={(h) => setHints((prev) => [...prev, h])}
+                onReveal={(h) =>
+                  setHints((prev) => [
+                    ...prev.filter((p) => p.kind !== h.kind),
+                    h,
+                  ])
+                }
                 disabled={Boolean(solved || myGuess?.correct || iHaveSkippedAhead)}
               />
               {solved && (

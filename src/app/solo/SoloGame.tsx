@@ -284,7 +284,14 @@ export function SoloGame() {
           <HintPanel
             track={current}
             revealed={hints}
-            onReveal={(h) => setHints((prev) => [...prev, h])}
+            onReveal={(h) =>
+              setHints((prev) => [
+                // Replace by kind so the Letters slot's partial title
+                // updates in place instead of appending each time.
+                ...prev.filter((p) => p.kind !== h.kind),
+                h,
+              ])
+            }
           />
         </>
       )}

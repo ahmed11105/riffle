@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const VALID_KINDS = new Set([
-  "year",
-  "title_letter_1",
-  "title_letter_2",
-  "artist",
-]);
+const VALID_KINDS = new Set(["year", "title_letters", "artist"]);
 
 // Consume one banked hint of the given kind. Direct admin
 // read-modify-write to avoid the consume_hint RPC's SECURITY

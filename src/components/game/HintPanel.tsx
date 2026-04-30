@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Gift, Lock } from "lucide-react";
+import { Check, Gift } from "lucide-react";
 import {
   HINT_COSTS,
   HINT_ICONS,
   HINT_KINDS,
   HINT_LABELS,
-  HINT_PREREQS,
   describeHint,
+  costForLetterIndex,
+  countAlphas,
+  ordinalLetter,
+  partialTitle,
   type HintKind,
 } from "@/lib/riffs/hints";
 import { useRiffs } from "@/lib/riffs/useRiffs";
@@ -81,6 +84,17 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
     return inventory[kind] ?? 0;
   }
 
+  // Letters already revealed for this track. The title_letters
+  // entry's `value` is the partial title with revealed letters
+  // filled in; counting alphas gives us how many letters the
+  // player has bought so far.
+  const titleLettersEntry = revealed.find((h) => h.kind === "title_letters");
+  const currentLettersRevealed = titleLettersEntry
+    ? countAlphas(titleLettersEntry.value)
+    : 0;
+  const totalAlphas = countAlphas(track.title);
+  const allLettersRevealed = currentLettersRevealed >= totalAlphas;
+
   async function buyHint(kind: HintKind) {
     setError(null);
     setBuying(kind);
@@ -128,7 +142,12 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
       }
 
       if (!adminOn && !consumed) {
-        const cost = HINT_COSTS[kind];
+        // title_letters cost varies by which letter the player is
+        // buying (15 for 1st, 10 for each subsequent).
+        const cost =
+          kind === "title_letters"
+            ? costForLetterIndex(currentLettersRevealed + 1)
+            : HINT_COSTS[kind];
         const result = await spend(cost, "hint", kind);
         if (!result.ok) {
           if (result.reason === "insufficient") {
@@ -142,7 +161,12 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
         }
       }
 
-      const value = await resolveHintValue(track, kind);
+      let value: string;
+      if (kind === "title_letters") {
+        value = partialTitle(track.title, currentLettersRevealed + 1);
+      } else {
+        value = await resolveHintValue(track, kind);
+      }
       const hint: RevealedHint = { kind, value };
       onReveal(hint);
       onBroadcast?.(hint);
@@ -183,56 +207,57 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
 
       {/* Icon-based hint row. Each badge shows either the banked
           quantity (if > 0) or the Riffs cost. Used hints flip to a
-          checkmark. Locked hints (e.g. 2nd letter before 1st is
-          revealed) show a Lock icon and ignore clicks. */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          checkmark. The Letters slot progresses through the song
+          title one alphabet character at a time — the label
+          updates ("1st letter" → "2nd letter" → ...) and the cost
+          drops to LETTER_REPEAT_COST after the first. */}
+      <div className="grid grid-cols-3 gap-2">
         {HINT_KINDS.map((kind) => {
           const Icon = HINT_ICONS[kind];
           const banked = getInventory(kind);
-          const cost = HINT_COSTS[kind];
-          const used = revealedKinds.has(kind);
-          const prereq = HINT_PREREQS[kind];
-          const locked = prereq != null && !revealedKinds.has(prereq);
+          const isLetters = kind === "title_letters";
+
+          // For Letters: dynamic label and cost; "used" means all
+          // letters have been revealed. For other kinds: static.
+          const cost = isLetters
+            ? costForLetterIndex(currentLettersRevealed + 1)
+            : HINT_COSTS[kind];
+          const used = isLetters ? allLettersRevealed : revealedKinds.has(kind);
+          const label = isLetters
+            ? allLettersRevealed
+              ? "All letters"
+              : ordinalLetter(currentLettersRevealed + 1)
+            : HINT_LABELS[kind];
+
           const cantAfford = !adminOn && banked === 0 && ready && balance < cost;
           const isBuyingThis = buying === kind;
           const isDisabled =
-            !!disabled || used || locked || spending || cantAfford || isBuyingThis;
+            !!disabled || used || spending || cantAfford || isBuyingThis;
           return (
             <button
               key={kind}
               type="button"
               onClick={() => buyHint(kind)}
               disabled={isDisabled}
-              aria-label={
-                locked
-                  ? `${HINT_LABELS[kind]} hint (locked, reveal ${HINT_LABELS[prereq!]} first)`
-                  : `${HINT_LABELS[kind]} hint`
-              }
-              title={
-                locked ? `Reveal ${HINT_LABELS[prereq!]} first` : undefined
-              }
+              aria-label={`${label} hint`}
               className={`relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 pb-1.5 pt-3 transition ${
                 used
                   ? "border-stone-300 bg-stone-100 text-stone-400"
-                  : locked
-                    ? "border-stone-300 bg-stone-100 text-stone-400"
-                    : isDisabled
-                      ? "border-stone-900 bg-stone-100 text-stone-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
-                      : "border-stone-900 bg-amber-300 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+                  : isDisabled
+                    ? "border-stone-900 bg-stone-100 text-stone-400 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+                    : "border-stone-900 bg-amber-300 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
               }`}
             >
               {used ? (
                 <Check className="h-6 w-6" />
-              ) : locked ? (
-                <Lock className="h-6 w-6" />
               ) : (
                 <Icon className="h-6 w-6" />
               )}
               <span className="text-[9px] font-black uppercase tracking-wider">
-                {HINT_LABELS[kind]}
+                {label}
               </span>
 
-              {!used && !locked && !adminOn && banked > 0 && (
+              {!used && !adminOn && banked > 0 && (
                 <span
                   aria-label={`${banked} banked`}
                   className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-emerald-400 px-1 text-[10px] font-black text-stone-900 shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
@@ -243,11 +268,7 @@ export function HintPanel({ track, revealed, onReveal, onBroadcast, disabled }: 
 
               {used ? (
                 <span className="text-[10px] font-black uppercase tracking-wider opacity-70">
-                  Used
-                </span>
-              ) : locked ? (
-                <span className="text-[10px] font-black uppercase tracking-wider opacity-60">
-                  Locked
+                  {isLetters ? "Revealed" : "Used"}
                 </span>
               ) : (
                 <span className="text-[10px] font-black uppercase tracking-wider opacity-70">

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Play, Pause } from "lucide-react";
 import { useAudioStore } from "@/lib/store/audio";
+import { LEVELS } from "@/lib/game/levels";
+
+const TOTAL_SECONDS = LEVELS[LEVELS.length - 1]; // 10s — full bar represents this
 
 type Props = {
   src: string;
@@ -30,6 +33,9 @@ export function AudioClip({
   const stopTimerRef = useRef<number | null>(null);
   const onEndedRef = useRef(onEnded);
   onEndedRef.current = onEnded;
+  // Drives the playhead bar above the play button. Updated from the
+  // audio element's timeupdate event while playing.
+  const [currentTime, setCurrentTime] = useState(0);
   const volume = useAudioStore((s) => s.volume);
   const muted = useAudioStore((s) => s.muted);
   const registerAudio = useAudioStore((s) => s.registerAudio);
@@ -46,8 +52,11 @@ export function AudioClip({
     const a = new Audio();
     a.preload = "auto";
     audioRef.current = a;
+    const onTimeUpdate = () => setCurrentTime(a.currentTime);
+    a.addEventListener("timeupdate", onTimeUpdate);
     return () => {
       a.pause();
+      a.removeEventListener("timeupdate", onTimeUpdate);
     };
   }, []);
 
@@ -79,6 +88,7 @@ export function AudioClip({
       try {
         a.currentTime = 0;
       } catch {}
+      setCurrentTime(0);
       a.play().catch(() => onEndedRef.current());
       registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist, trackId);
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
@@ -95,8 +105,22 @@ export function AudioClip({
     };
   }, [playing, maxSeconds, src, registerAudio, pathname, trackId, trackTitle, trackArtist]);
 
+  // Bar fill: 0..1 of total clip length. Caps at 1 so we never
+  // overshoot if the audio briefly reports past maxSeconds.
+  const fillPct = Math.max(
+    0,
+    Math.min(100, (currentTime / TOTAL_SECONDS) * 100),
+  );
+  const labelPct = (maxSeconds / TOTAL_SECONDS) * 100;
+  const labelText = maxSeconds === 1 ? "1 second" : `${maxSeconds} seconds`;
+
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex w-full max-w-md flex-col items-center gap-3">
+      <ClipProgressBar
+        fillPct={fillPct}
+        labelPct={labelPct}
+        labelText={labelText}
+      />
       <button
         type="button"
         onClick={onToggle}
@@ -107,6 +131,67 @@ export function AudioClip({
           {playing ? <Pause className="h-10 w-10" /> : <Play className="ml-1 h-10 w-10" />}
         </div>
       </button>
+    </div>
+  );
+}
+
+// Songless-style horizontal progress bar with section dividers at
+// each clip-level boundary, an amber fill that grows during play,
+// and a dark caption at the playhead pointing down with a small
+// triangle. Riffle palette: stone-900 track, amber-400 fill.
+function ClipProgressBar({
+  fillPct,
+  labelPct,
+  labelText,
+}: {
+  fillPct: number;
+  labelPct: number;
+  labelText: string;
+}) {
+  // Section dividers at every level boundary except 0 and the end.
+  const dividers = LEVELS.slice(0, -1).map((s) => (s / TOTAL_SECONDS) * 100);
+
+  return (
+    <div className="relative w-full pt-7">
+      {/* Caption pinned at the level's stop point. */}
+      <div
+        className="pointer-events-none absolute top-0 -translate-x-1/2"
+        style={{ left: `min(max(${labelPct}%, 14%), 86%)` }}
+      >
+        <div className="rounded-md bg-stone-900 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-100">
+          {labelText}
+        </div>
+        {/* Down-pointing triangle that visually anchors the caption
+            to the playhead end on the bar. */}
+        <div
+          className="absolute left-1/2 top-full -translate-x-1/2"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: "5px solid transparent",
+            borderRight: "5px solid transparent",
+            borderTop: "5px solid #1c1917",
+          }}
+        />
+      </div>
+
+      {/* Track. */}
+      <div className="relative h-4 w-full overflow-hidden rounded-full border-2 border-stone-900 bg-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
+        {/* Filled portion. */}
+        <div
+          className="absolute inset-y-0 left-0 bg-amber-400 transition-[width] duration-75"
+          style={{ width: `${fillPct}%` }}
+        />
+        {/* Section dividers — thin amber-ish lines on the dark track. */}
+        {dividers.map((pct, i) => (
+          <div
+            key={i}
+            aria-hidden="true"
+            className="absolute inset-y-0 w-px bg-amber-100/30"
+            style={{ left: `${pct}%` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
