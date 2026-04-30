@@ -52,13 +52,28 @@ export function AudioClip({
     const a = new Audio();
     a.preload = "auto";
     audioRef.current = a;
-    const onTimeUpdate = () => setCurrentTime(a.currentTime);
-    a.addEventListener("timeupdate", onTimeUpdate);
     return () => {
       a.pause();
-      a.removeEventListener("timeupdate", onTimeUpdate);
     };
   }, []);
+
+  // Drive the playhead bar with a requestAnimationFrame loop while
+  // playing. The audio element's `timeupdate` event fires at only
+  // 4-66Hz which makes the fill visibly chunky; rAF reads
+  // currentTime at the display refresh rate (typically 60Hz) for a
+  // smooth fill.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (!playing) return;
+    let raf = 0;
+    const tick = () => {
+      setCurrentTime(a.currentTime);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing]);
 
   // Update src when it changes.
   useEffect(() => {
@@ -179,7 +194,7 @@ function ClipProgressBar({
       <div className="relative h-4 w-full overflow-hidden rounded-full border-2 border-stone-900 bg-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
         {/* Filled portion. */}
         <div
-          className="absolute inset-y-0 left-0 bg-amber-400 transition-[width] duration-75"
+          className="absolute inset-y-0 left-0 bg-amber-400"
           style={{ width: `${fillPct}%` }}
         />
         {/* Section dividers — thin amber-ish lines on the dark track. */}
