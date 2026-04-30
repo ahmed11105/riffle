@@ -103,59 +103,63 @@ export function LoginCalendar() {
           </span>
         )}
       </div>
-      <div className="mb-3 grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
           const isHighlight = day === highlightDay;
           const claimable = isHighlight && !claimedToday;
           const isPast = claimedToday ? day <= (profile?.login_day_index ?? 0) : day < upcomingDay;
           const reward = REWARDS[day];
-          // Claimable = green emboss (raised, lighter text). Past =
-          // dim. Future = neutral. Day 7 keeps a subtle amber ring as
-          // the "grand prize" hint regardless of state.
-          const tileClass = claimable
-            ? "border-emerald-700 bg-emerald-500 text-emerald-50 shadow-[0_3px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.5),inset_0_-2px_0_0_rgba(0,0,0,0.18)]"
+
+          // Claimable tiles ARE the click target — the old big "Claim
+          // N Riffs" button was duplicate UI. CLAIM ribbon at the
+          // bottom of the tile communicates affordance inside the
+          // box itself.
+          const baseTile =
+            "relative flex flex-col items-center justify-start gap-0.5 overflow-hidden rounded-lg border-2 pt-2 text-center transition";
+          const stateTile = claimable
+            ? "border-emerald-700 bg-emerald-500 text-emerald-50 shadow-[0_3px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.5),inset_0_-2px_0_0_rgba(0,0,0,0.18)] hover:bg-emerald-400 active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.5),inset_0_-2px_0_0_rgba(0,0,0,0.18)] disabled:opacity-60"
             : isPast
               ? "border-stone-800 bg-stone-800 text-amber-100/40"
               : "border-stone-800 bg-stone-900 text-amber-100/70";
-          return (
-            <div
-              key={day}
-              className={[
-                "flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 py-2 text-center transition",
-                tileClass,
-                day === 7 ? "ring-2 ring-amber-300/40" : "",
-              ].join(" ")}
-            >
+          const ring = day === 7 && !claimable ? "ring-2 ring-amber-300/40" : "";
+
+          const inner = (
+            <>
               <RiffsIcon size={14} className={claimable ? "" : isPast ? "opacity-40" : "opacity-70"} />
               <span className={`text-xs font-black ${day === 7 && !claimable ? "text-amber-200" : ""}`}>
                 {reward}
               </span>
+              <div className="mt-1 h-4 w-full">
+                {claimable && (
+                  <div className="flex h-full w-full items-center justify-center bg-stone-900 text-[9px] font-black uppercase tracking-wider text-emerald-300">
+                    {busy ? "…" : "Claim"}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+
+          if (claimable) {
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={handleClaim}
+                disabled={busy}
+                aria-label={`Claim ${reward} Riffs`}
+                className={[baseTile, stateTile, ring].join(" ")}
+              >
+                {inner}
+              </button>
+            );
+          }
+          return (
+            <div key={day} className={[baseTile, stateTile, ring].join(" ")}>
+              {inner}
             </div>
           );
         })}
       </div>
-      <button
-        type="button"
-        onClick={handleClaim}
-        disabled={claimedToday || busy}
-        className={[
-          "relative flex w-full items-center justify-center gap-2 rounded-full border-4 border-stone-900 px-4 py-2 text-sm font-black uppercase tracking-wider shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:cursor-not-allowed disabled:opacity-40",
-          claimedToday
-            ? "bg-stone-700 text-amber-100/70"
-            : "bg-emerald-500 text-emerald-50 shadow-[0_3px_0_0_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.4)]",
-        ].join(" ")}
-      >
-        {!claimedToday && (
-          <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-stone-50 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
-            <RiffsIcon size={12} />
-          </span>
-        )}
-        {claimedToday
-          ? "Come back tomorrow"
-          : busy
-            ? "Claiming…"
-            : `Claim ${REWARDS[upcomingDay]} Riffs`}
-      </button>
     </div>
   );
 }
