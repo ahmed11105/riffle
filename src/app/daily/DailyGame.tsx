@@ -8,6 +8,9 @@ import { GuessInput } from "@/components/game/GuessInput";
 import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
 import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
+import { StreakBadge } from "@/components/game/StreakBadge";
+import { StreakRestoreOffer } from "@/components/game/StreakRestoreOffer";
+import { BonusRoundPrompt } from "@/components/game/BonusRoundPrompt";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip } from "@/lib/sfx";
@@ -86,6 +89,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   // index returns 409 on the second insert.
   const { user, refreshStreak } = useAuth();
   const submittedRef = useRef<string | null>(null);
+  const [freezeConsumed, setFreezeConsumed] = useState(false);
   useEffect(() => {
     if (!done) return;
     saveFinished(track.id, done);
@@ -105,11 +109,13 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           ? Math.max(20, 100 - LEVELS.indexOf(done.levelSolved as (typeof LEVELS)[number]) * 16)
           : 0,
       })
-      .then(({ error }) => {
+      .then(({ data, error }) => {
         if (error) {
           console.warn("record_daily_result failed:", error.message);
           return;
         }
+        const result = data as { freeze_consumed?: boolean } | null;
+        if (result?.freeze_consumed) setFreezeConsumed(true);
         refreshStreak();
       });
   }, [done, track.id, user, refreshStreak]);
@@ -171,6 +177,8 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           setDone(null);
         }}
       />
+      <StreakBadge />
+      <StreakRestoreOffer />
       <ClipLadder currentLevel={current} guesses={ladderStates} />
       {!done && (
         <>
@@ -188,6 +196,11 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
       )}
       {done && (
         <>
+          {freezeConsumed && (
+            <div className="rounded-2xl border-2 border-cyan-400 bg-cyan-400/10 px-4 py-3 text-center text-sm font-black uppercase tracking-wider text-cyan-200 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
+              ❄️ Streak Freeze used — yesterday saved
+            </div>
+          )}
           <RevealCard
             track={revealTrack}
             correct={done.correct}
@@ -197,6 +210,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
               guesses: (done.guesses ?? guesses).map((g) => g.kind),
             }}
           />
+          <BonusRoundPrompt />
           <NextDailyCountdown />
           <KeepPlayingCTA />
           <SaveProgressNudge />

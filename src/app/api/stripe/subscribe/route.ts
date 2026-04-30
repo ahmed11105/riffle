@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
-import { PRO_MONTHLY_GBP } from "@/lib/riffs/pro";
+import { PRO_MONTHLY_GBP, PRO_TRIAL_DAYS } from "@/lib/riffs/pro";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Pro monthly subscription. Uses inline price_data with recurring interval
 // so we don't need a Dashboard-configured Price object during MVP scaffolding.
@@ -30,11 +31,18 @@ export async function POST(req: Request) {
 
   // Re-use stripe_customer_id if we have one so all the user's invoices,
   // payment methods, and subscription history live under one customer.
-  const { data: profile } = await supabase
+  // Also check whether they've ever had Pro before — Stripe's
+  // trial_period_days fires on every checkout, so we'd need to
+  // gate it ourselves to prevent free-trial farming.
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, stripe_subscription_id, pro_status")
     .eq("id", user.id)
     .maybeSingle();
+  const hadPaidProBefore =
+    !!profile?.stripe_subscription_id ||
+    (profile?.pro_status != null && profile.pro_status !== "starter_trial");
 
   const stripe = getStripe();
   const origin =
@@ -69,6 +77,11 @@ export async function POST(req: Request) {
         user_id: user.id,
         product: "pro_monthly",
       },
+      // First-time subscribers get a 7-day free trial. Anyone who's
+      // had a real (non-starter-trial) Pro subscription before doesn't
+      // get the trial again — Stripe charges immediately at the end of
+      // the period instead.
+      ...(hadPaidProBefore ? {} : { trial_period_days: PRO_TRIAL_DAYS }),
     },
     success_url: `${origin}/shop?pro_ok=1`,
     cancel_url: `${origin}/shop?pro_cancelled=1`,

@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   },
   // AdSense site verification.
   other: {
-    "google-adsense-account": "ca-pub-7248319991910293",
+    "google-adsense-account": "ca-pub-7586421136621055",
   },
 };
 
@@ -85,7 +85,7 @@ export default function RootLayout({
             no-op for serving — but we need it live for verification. */}
         <Script
           id="adsbygoogle-loader"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7248319991910293"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7586421136621055"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />

@@ -18,13 +18,15 @@ export async function GET() {
     admin
       .from("profiles")
       .select(
-        "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status, hint_inventory",
+        "id, display_name, tag, avatar_url, coin_balance, xp, level, is_pro, pro_current_period_end, pro_status, hint_inventory, login_day_index, login_last_claimed_on, starter_pack_claimed",
       )
       .eq("id", userId)
       .maybeSingle(),
     admin
       .from("streaks")
-      .select("current_streak, longest_streak, last_play_date")
+      .select(
+        "current_streak, longest_streak, last_play_date, freezes_available, pre_break_streak, broken_at",
+      )
       .eq("user_id", userId)
       .maybeSingle(),
   ]);

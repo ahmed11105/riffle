@@ -7,6 +7,7 @@ import {
   useState,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -27,12 +28,24 @@ export type Profile = {
   // Banked free hints, keyed by HintKind. Decremented atomically by
   // consume_hint(); only falls back to Riffs spending when 0.
   hint_inventory: Record<string, number>;
+  // 7-day login calendar progress. login_day_index is the day they
+  // last claimed on (1..7); login_last_claimed_on is the UTC date.
+  login_day_index: number;
+  login_last_claimed_on: string | null;
+  // True once the user has bought the £1.99 starter pack. Eligibility
+  // gate for the StarterPackOffer banner.
+  starter_pack_claimed: boolean;
 };
 
 export type Streak = {
   current_streak: number;
   longest_streak: number;
   last_play_date: string | null;
+  freezes_available: number;
+  // Saved when the streak resets (>=3 days). Within 48h of broken_at,
+  // the user can pay Riffs to restore current_streak to this value.
+  pre_break_streak: number;
+  broken_at: string | null;
 };
 
 type AuthContextValue = {
@@ -208,6 +221,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!profile.pro_current_period_end) return true;
     return new Date(profile.pro_current_period_end).getTime() > Date.now();
   })();
+
+  // Pro perk: 1 streak freeze auto-granted every 7 days, capped at 2.
+  // The RPC is rate-limited server-side, so calling it on every Pro
+  // user load is safe (and necessary, since this is a web app with no
+  // background jobs of our own). Fires once per session per user.
+  const freezeGrantedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isPro || !user?.id) return;
+    if (freezeGrantedRef.current === user.id) return;
+    freezeGrantedRef.current = user.id;
+    supabase.rpc("grant_weekly_freeze").then(({ data, error }) => {
+      if (error) {
+        console.warn("grant_weekly_freeze failed:", error.message);
+        return;
+      }
+      const result = data as { granted?: boolean } | null;
+      if (result?.granted) refreshStreak();
+    });
+  }, [isPro, user?.id, supabase, refreshStreak]);
 
   return (
     <AuthContext.Provider

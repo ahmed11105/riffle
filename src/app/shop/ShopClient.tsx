@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
-import { RIFFS_BUNDLES } from "@/lib/riffs/bundles";
-import { PRO_MONTHLY_GBP, PRO_PERKS } from "@/lib/riffs/pro";
+import { RIFFS_BUNDLES, bonusPctVsStarter } from "@/lib/riffs/bundles";
+import { PRO_MONTHLY_GBP, PRO_PER_DAY_PENCE, PRO_PERKS, PRO_TRIAL_DAYS } from "@/lib/riffs/pro";
 import { createClient } from "@/lib/supabase/client";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
@@ -244,10 +244,25 @@ async function subscribePro() {
               <div className="text-xs font-black uppercase tracking-wider text-stone-700">
                 Subscription
               </div>
-              <div className="mt-1 text-4xl font-black">
-                {formatGbp(PRO_MONTHLY_GBP)}
-                <span className="text-base font-bold text-stone-700">/month</span>
-              </div>
+              {isPro ? (
+                <div className="mt-1 text-4xl font-black">
+                  {formatGbp(PRO_MONTHLY_GBP)}
+                  <span className="text-base font-bold text-stone-700">/month</span>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-1 inline-block rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300">
+                    First {PRO_TRIAL_DAYS} days free
+                  </div>
+                  <div className="mt-2 text-4xl font-black">
+                    Less than {formatGbp(PRO_PER_DAY_PENCE)}
+                    <span className="text-base font-bold text-stone-700">/day</span>
+                  </div>
+                  <div className="text-sm font-bold text-stone-700">
+                    Then {formatGbp(PRO_MONTHLY_GBP)} a month
+                  </div>
+                </>
+              )}
               <p className="mt-1 text-xs font-bold text-stone-700">
                 Cancel anytime. No refunds for partial months.
               </p>
@@ -268,7 +283,7 @@ async function subscribePro() {
                 disabled={proLoading || !user}
                 className="rounded-full border-4 border-stone-900 bg-stone-900 px-6 py-3 text-base font-black text-amber-300 shadow-[0_4px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
               >
-                {proLoading ? "Opening…" : "Go Pro"}
+                {proLoading ? "Opening…" : "Try free for 7 days"}
               </button>
             )}
           </div>
@@ -292,6 +307,7 @@ async function subscribePro() {
           {RIFFS_BUNDLES.map((b) => {
             const total = b.riffs + b.bonus;
             const loading = checkoutLoading === b.id;
+            const bonusPct = bonusPctVsStarter(b);
             return (
               <button
                 key={b.id}
@@ -300,10 +316,15 @@ async function subscribePro() {
                 disabled={loading || !user}
                 className={
                   b.highlight
-                    ? "rounded-2xl border-4 border-stone-900 bg-amber-400 p-5 text-left text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
-                    : "rounded-2xl border-4 border-stone-900 bg-stone-50 p-5 text-left text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+                    ? "relative rounded-2xl border-4 border-stone-900 bg-amber-400 p-5 text-left text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] ring-4 ring-amber-300/40 active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+                    : "relative rounded-2xl border-4 border-stone-900 bg-stone-50 p-5 text-left text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
                 }
               >
+                {b.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-stone-900 bg-stone-900 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300">
+                    {b.badge}
+                  </div>
+                )}
                 <div className="text-xs font-bold uppercase tracking-wider text-stone-700">
                   {b.label}
                 </div>
@@ -311,6 +332,11 @@ async function subscribePro() {
                 {b.bonus > 0 && (
                   <div className="text-xs font-bold text-emerald-700">
                     +{b.bonus} bonus
+                  </div>
+                )}
+                {bonusPct > 0 && (
+                  <div className="mt-0.5 text-[10px] font-black uppercase tracking-wider text-stone-500">
+                    +{bonusPct}% Riffs/£ vs Starter
                   </div>
                 )}
                 <div className="mt-3 text-xl font-black">

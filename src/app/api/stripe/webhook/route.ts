@@ -61,14 +61,29 @@ const handleCheckoutSessionCompleted: EventHandler = async (event, admin, stripe
     return { ok: true };
   }
 
-  // One-off Riffs payment.
+  // One-off Riffs payment OR starter pack. Starter pack also grants
+  // a 7-day Pro trial via grant_starter_pack.
   const userId = session.metadata?.user_id;
   const riffsTotal = Number(session.metadata?.riffs_total ?? 0);
+  const product = session.metadata?.product;
   const bundleId = session.metadata?.bundle_id ?? "unknown";
 
   if (!userId || !riffsTotal) {
     console.error("[stripe webhook] missing metadata", session.id);
     return { ok: false, status: 400, error: "Missing metadata" };
+  }
+
+  if (product === "starter_pack") {
+    const { error } = await admin.rpc("grant_starter_pack", {
+      p_user: userId,
+      p_riffs: riffsTotal,
+      p_session_id: session.id,
+    });
+    if (error) {
+      console.error("[stripe webhook] grant_starter_pack failed", error.message);
+      return { ok: false, status: 500, error: error.message };
+    }
+    return { ok: true };
   }
 
   const { error } = await admin.rpc("grant_coins", {

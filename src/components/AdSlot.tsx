@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
 //   3. Set the corresponding entry in lib/adslots.ts. Done — no
 //      component changes needed.
 
-const AD_CLIENT = "ca-pub-7248319991910293";
+const AD_CLIENT = "ca-pub-7586421136621055";
 
 declare global {
   interface Window {
