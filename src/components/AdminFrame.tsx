@@ -10,6 +10,18 @@ import {
   useAdminMode,
 } from "@/lib/admin";
 
+const SECRET_KEY = "riffle:admin:secret";
+
+function promptForSecret(): string | null {
+  if (typeof window === "undefined") return null;
+  const next = window.prompt(
+    "Enter admin secret (matches ADMIN_SECRET env on Vercel):",
+  );
+  if (!next) return null;
+  window.localStorage.setItem(SECRET_KEY, next);
+  return next;
+}
+
 // Floating admin pill, always available while admin mode is on. Click
 // (or hover) the pill to drop a menu with reset options + exit. The
 // reset options pair the in-browser localStorage wipe with a server
@@ -52,14 +64,28 @@ export function AdminFrame() {
     if (pathname.startsWith("/admin")) router.push("/");
   }
 
+  async function postReset(kind: "daily" | "overall") {
+    return fetch("/api/admin/reset-progress", {
+      method: "POST",
+      headers: adminHeaders(),
+      body: JSON.stringify({ kind }),
+    });
+  }
+
   async function callReset(kind: "daily" | "overall") {
     setBusy(kind);
     try {
-      const res = await fetch("/api/admin/reset-progress", {
-        method: "POST",
-        headers: adminHeaders(),
-        body: JSON.stringify({ kind }),
-      });
+      let res = await postReset(kind);
+      // 401 = stored secret doesn't match server. Prompt for the right
+      // one, save it, and retry once before giving up.
+      if (res.status === 401) {
+        const updated = promptForSecret();
+        if (!updated) {
+          setToast("Reset cancelled");
+          return;
+        }
+        res = await postReset(kind);
+      }
       const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !json.ok) {
         setToast(json.error ? `Reset failed: ${json.error}` : "Reset failed");
@@ -80,6 +106,12 @@ export function AdminFrame() {
     } finally {
       setBusy(null);
     }
+  }
+
+  function updateSecret() {
+    const next = promptForSecret();
+    setOpen(false);
+    setToast(next ? "Admin secret updated" : "Cancelled");
   }
 
   return (
@@ -135,6 +167,14 @@ export function AdminFrame() {
                 className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800 disabled:opacity-50"
               >
                 {busy === "overall" ? "Resetting…" : "Reset overall progress"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={updateSecret}
+                className="block w-full border-t border-stone-700 px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider hover:bg-stone-800"
+              >
+                Update admin secret
               </button>
               <button
                 type="button"
