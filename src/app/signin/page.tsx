@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/branding/Logo";
-import { MainNav } from "@/components/MainNav";
 import { MagicLinkForm } from "@/components/MagicLinkForm";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
@@ -20,13 +17,6 @@ export default function SignInPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <MainNav />
-      </header>
-
       <section className="mt-12 flex w-full max-w-md flex-col items-center text-center">
         <h1 className="text-4xl font-black tracking-tight text-amber-100">
           Sign in to Riffle

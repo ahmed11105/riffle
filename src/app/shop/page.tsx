@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Logo } from "@/components/branding/Logo";
-import { MainNav } from "@/components/MainNav";
 import { ShopClient } from "./ShopClient";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,13 +59,6 @@ function ShopFallback() {
 export default function ShopPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <MainNav />
-      </header>
-
       <section className="mt-8 w-full max-w-5xl">
         <h1 className="text-4xl font-black tracking-tight text-amber-100 sm:text-5xl">
           Riffle Shop

@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
-import { Logo } from "@/components/branding/Logo";
-import { MainNav } from "@/components/MainNav";
 import { LeaderboardTabs } from "./LeaderboardTabs";
 import { createClient } from "@/lib/supabase/server";
 
@@ -101,13 +98,6 @@ function LeaderboardFallback() {
 export default function LeaderboardPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <MainNav />
-      </header>
-
       <section className="mt-8 w-full max-w-3xl">
         <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
           Leaderboard

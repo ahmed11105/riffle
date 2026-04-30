@@ -12,11 +12,10 @@ import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
 import { Onboarding } from "@/components/Onboarding";
 import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
-import { AccountButton } from "@/components/AccountButton";
 import { ReferralRedeemer } from "@/components/ReferralRedeemer";
-import { RiffsBalanceFloating } from "@/components/RiffsBalanceFloating";
 import { DailyRiffsManager } from "@/components/DailyRiffsManager";
 import { CoinFlyLayer } from "@/components/CoinFlyLayer";
+import { PageChrome } from "@/components/PageChrome";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -102,10 +101,7 @@ export default function RootLayout({
               <MobileNav />
             </Suspense>
             <Suspense>
-              <AccountButton variant="floating" />
-            </Suspense>
-            <Suspense>
-              <RiffsBalanceFloating />
+              <PageChrome />
             </Suspense>
             <Suspense>
               <DailyRiffsManager />

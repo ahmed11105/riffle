@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
 import { flyCoinsFrom } from "@/lib/coinFly";
 import { CloseButton } from "@/components/CloseButton";
 import { RiffsIcon } from "@/components/RiffsIcon";
+import { OPEN_DAILY_EVENT } from "@/lib/dailyRiffs";
 
 const REWARDS: Record<number, number> = {
   1: 5,
@@ -84,6 +84,15 @@ export function DailyRiffsManager() {
     setOpen(true);
   }, [loading, profile, today, claimedToday]);
 
+  // Open on demand from the ribbon's Daily icon button.
+  useEffect(() => {
+    function handle() {
+      setOpen(true);
+    }
+    window.addEventListener(OPEN_DAILY_EVENT, handle);
+    return () => window.removeEventListener(OPEN_DAILY_EVENT, handle);
+  }, []);
+
   function markAutoShown() {
     if (!today) return;
     try {
@@ -128,49 +137,18 @@ export function DailyRiffsManager() {
 
   if (loading || !profile || !today) return null;
 
-  return (
-    <>
-      <DailyRiffsTriggerButton
-        claimable={!claimedToday}
-        onClick={() => setOpen(true)}
-      />
-      {open && (
-        <DailyRiffsDialog
-          claimedToday={claimedToday}
-          highlightDay={highlightDay}
-          upcomingDay={upcomingDay}
-          claimedDayIndex={profile?.login_day_index ?? 0}
-          busy={busy}
-          claimTileRef={claimTileRef}
-          onClaim={handleClaim}
-          onClose={handleClose}
-        />
-      )}
-    </>
-  );
-}
-
-function DailyRiffsTriggerButton({
-  claimable,
-  onClick,
-}: {
-  claimable: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={claimable ? "Open daily Riffs (claim available)" : "Open daily Riffs"}
-      className="fixed left-4 top-14 z-40 inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-stone-100 sm:left-6 sm:top-16"
-    >
-      <CalendarDays className="h-4 w-4" aria-hidden />
-      <span>Daily</span>
-      {claimable && (
-        <span className="ml-0.5 inline-flex h-2.5 w-2.5 rounded-full border border-stone-900 bg-emerald-500 shadow-[0_1px_0_0_rgba(0,0,0,0.7)]" />
-      )}
-    </button>
-  );
+  return open ? (
+    <DailyRiffsDialog
+      claimedToday={claimedToday}
+      highlightDay={highlightDay}
+      upcomingDay={upcomingDay}
+      claimedDayIndex={profile?.login_day_index ?? 0}
+      busy={busy}
+      claimTileRef={claimTileRef}
+      onClaim={handleClaim}
+      onClose={handleClose}
+    />
+  ) : null;
 }
 
 function DailyRiffsDialog({

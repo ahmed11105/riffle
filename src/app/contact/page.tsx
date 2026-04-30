@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@/components/branding/Logo";
-import { MainNav } from "@/components/MainNav";
 import { ContactClient } from "./ContactClient";
 
 export const metadata: Metadata = {
@@ -13,13 +11,6 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <MainNav />
-      </header>
-
       <article className="mt-10 w-full max-w-3xl rounded-3xl border-4 border-stone-900 bg-stone-50 p-8 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
         <h1 className="text-4xl font-black">Get in touch</h1>
         <p className="mt-2 text-stone-600">

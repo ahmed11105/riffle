@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { loadLocalPlayer, saveLocalPlayer } from "@/lib/rooms";
 import { adminHeaders } from "@/lib/admin";
-import { MainNav } from "@/components/MainNav";
 
 export default function RoomsPage() {
   const router = useRouter();
@@ -85,11 +83,6 @@ export default function RoomsPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/"><Logo /></Link>
-        <MainNav />
-      </header>
-
       <section className="mt-10 flex w-full max-w-md flex-col items-center text-center">
         <Mascot size={120} className="mb-3 drop-shadow-[0_8px_0_rgba(0,0,0,0.9)]" />
         <h1 className="text-5xl font-black leading-none tracking-tighter text-amber-100">

@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Share2, Check, Gift } from "lucide-react";
-import { Logo } from "@/components/branding/Logo";
-import { MainNav } from "@/components/MainNav";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { copyText } from "@/lib/clipboard";
 
@@ -106,13 +103,6 @@ export default function InvitePage() {
 
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-10 text-amber-100">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <MainNav />
-      </header>
-
       {(loading || isAnonymous) ? (
         <div className="mt-12 text-sm text-amber-100/60">Loading…</div>
       ) : (

@@ -1,21 +1,19 @@
 import Link from "next/link";
-import { Logo } from "@/components/branding/Logo";
 import { Mascot } from "@/components/branding/Mascot";
 import { HomeStats } from "@/components/HomeStats";
 import { HomeHelpLinks } from "@/components/HomeHelpLinks";
 import { StarterPackOffer } from "@/components/StarterPackOffer";
-import { ActiveEventBanner } from "@/components/ActiveEventBanner";
-import { MainNav } from "@/components/MainNav";
+
+// ActiveEventBanner removed from the home page for now — the user
+// flagged the big "Decade Showdown" card as visually heavy. The
+// tournament icon in the global ribbon (PageChrome) is the entry
+// point until we redesign the long-form banner. The component still
+// lives in src/components/ActiveEventBanner.tsx so we can reuse it.
 
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-4 text-[--color-foreground] sm:py-10">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <Logo />
-        <MainNav />
-      </header>
-
-      <section className="mt-4 flex w-full max-w-xl flex-col items-center text-center sm:mt-10">
+      <section className="mt-2 flex w-full max-w-xl flex-col items-center text-center sm:mt-6">
         {/* Mascot shrinks on mobile so the buttons sit within thumb reach
             without scrolling. */}
         <Mascot
@@ -42,13 +40,11 @@ export default function Home() {
         </div>
 
         <HomeStats />
-        <ActiveEventBanner />
         <div className="mt-6 w-full">
           <StarterPackOffer />
         </div>
         <HomeHelpLinks />
       </section>
-
     </main>
   );
 }
