@@ -131,7 +131,10 @@ export function LoginCalendar() {
               </span>
               <div className="mt-1 h-4 w-full">
                 {claimable && (
-                  <div className="flex h-full w-full items-center justify-center bg-stone-900 text-[9px] font-black uppercase tracking-wider text-emerald-300">
+                  // White ribbon + dark money-green text. green-800 is
+                  // closest to USD-bill green in Tailwind without
+                  // diverging from the site's amber/stone palette.
+                  <div className="flex h-full w-full items-center justify-center bg-white text-[9px] font-black uppercase tracking-wider text-green-800">
                     {busy ? "…" : "Claim"}
                   </div>
                 )}
