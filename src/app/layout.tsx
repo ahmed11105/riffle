@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { ReferralRedeemer } from "@/components/ReferralRedeemer";
 import { DailyRiffsManager } from "@/components/DailyRiffsManager";
+import { TournamentManager } from "@/components/TournamentManager";
 import { CoinFlyLayer } from "@/components/CoinFlyLayer";
 import { PageChrome } from "@/components/PageChrome";
 
@@ -105,6 +106,9 @@ export default function RootLayout({
             </Suspense>
             <Suspense>
               <DailyRiffsManager />
+            </Suspense>
+            <Suspense>
+              <TournamentManager />
             </Suspense>
             <CoinFlyLayer />
             {children}

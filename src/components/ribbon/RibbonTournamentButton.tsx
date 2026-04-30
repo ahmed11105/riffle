@@ -1,25 +1,37 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
-import { RibbonIconButtonShell } from "@/components/ribbon/RibbonDailyButton";
+import {
+  RibbonIconButtonShell,
+  type RibbonIconAppearance,
+} from "@/components/ribbon/RibbonDailyButton";
+import { openTournament } from "@/lib/tournament";
 
 type ActiveEvent = {
   id: string;
   slug: string;
+  ends_at: string;
   milestone_thresholds: { score: number; riffs: number }[];
 };
 
 type Entry = { score: number; milestone_claims: number[] };
 
-// Tournament shortcut. When an event is live the icon links to
-// /events/<slug> and shows a progress bar toward the next unclaimed
-// milestone (goal-gradient cue) plus a corner badge counting any
-// milestones currently ready to claim. When no event is active, the
-// button hides itself — better than a dead icon.
+// Tournament shortcut. Three states map to the icon's three
+// appearances:
+//   - active (amber + claim badge) when the player has at least
+//     one milestone reached but unclaimed
+//   - ongoing (pale amber) while the event is running and there's
+//     nothing to claim right now — different from the daily's
+//     "claimed today" hollow because tournaments run for days
+//   - hollow when the event has ended (kept visible for a short
+//     window so the player can claim leftovers, then it'll go
+//     away when get_active_event stops returning a row)
+//
+// Click opens the TournamentModal via openTournament() — same
+// pattern as the Daily button.
 export function RibbonTournamentButton() {
   const { user } = useAuth();
   const [event, setEvent] = useState<ActiveEvent | null>(null);
@@ -54,29 +66,34 @@ export function RibbonTournamentButton() {
   const claimed = entry?.milestone_claims ?? [];
   const milestones = event.milestone_thresholds ?? [];
 
-  // Next unclaimed milestone defines the progress target. If
-  // everything is claimed, peg progress at 1 (full bar).
   const nextIdx = milestones.findIndex(
     (_, i) => !claimed.includes(i) && score < milestones[i].score,
   );
-  const target = nextIdx >= 0 ? milestones[nextIdx].score : milestones[milestones.length - 1]?.score ?? 1;
+  const target =
+    nextIdx >= 0
+      ? milestones[nextIdx].score
+      : milestones[milestones.length - 1]?.score ?? 1;
   const progress = Math.min(1, score / Math.max(1, target));
 
-  // Count milestones the player can claim right now (score >=
-  // threshold, not yet claimed).
   const claimable = milestones.filter(
     (m, i) => score >= m.score && !claimed.includes(i),
   ).length;
 
+  const ended = new Date(event.ends_at).getTime() < Date.now();
+
+  let appearance: RibbonIconAppearance;
+  if (ended) appearance = "hollow";
+  else if (claimable > 0) appearance = "active";
+  else appearance = "ongoing";
+
   return (
-    <Link href={`/events/${event.slug}`} aria-label="Active event">
-      <RibbonIconButtonShell
-        label="Active event"
-        icon={<Trophy className="h-5 w-5" />}
-        onClick={() => {}}
-        progress={progress}
-        badge={claimable > 0 ? String(claimable) : undefined}
-      />
-    </Link>
+    <RibbonIconButtonShell
+      label="Tournament"
+      icon={<Trophy className="h-5 w-5" />}
+      onClick={openTournament}
+      appearance={appearance}
+      progress={progress}
+      badge={claimable > 0 ? String(claimable) : undefined}
+    />
   );
 }

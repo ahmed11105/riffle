@@ -15,6 +15,7 @@ import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
+import { openDailyRiffs } from "@/lib/dailyRiffs";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
@@ -116,6 +117,18 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         const result = data as { freeze_consumed?: boolean } | null;
         if (result?.freeze_consumed) setFreezeConsumed(true);
         refreshStreak();
+        // Surface the Daily Riffs claim modal once the round wraps,
+        // not on first visit. Gated by a per-day localStorage flag so
+        // navigating away and back doesn't re-trigger.
+        try {
+          const flag = localStorage.getItem("riffle:daily-riffs:auto-shown");
+          if (flag !== today) {
+            localStorage.setItem("riffle:daily-riffs:auto-shown", today);
+            // Tiny delay so the RevealCard mounts first and the
+            // modal arrives a beat after the result lands.
+            window.setTimeout(() => openDailyRiffs(), 1200);
+          }
+        } catch {}
       });
   }, [done, track.id, user, refreshStreak]);
 

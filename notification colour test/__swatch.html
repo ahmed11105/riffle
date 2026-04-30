@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Notification colour test</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #1c1917; font-family: ui-sans-serif, system-ui; }
+</style>
+</head>
+<body class="p-10">
+  <h1 class="text-amber-100 text-2xl font-black uppercase tracking-wider mb-2">
+    Notification colour test
+  </h1>
+  <p class="text-amber-100/60 text-sm mb-8">
+    Daily icon (amber-400 unopened) with the notification badge in 12 different colours.
+    Same number, same border, same shadow — only the badge fill / text changes.
+  </p>
+
+  <div class="grid grid-cols-3 gap-x-12 gap-y-10">
+    <!-- swatches injected by JS -->
+  </div>
+
+<script>
+  const swatches = [
+    { label: "Red — rose-500 (current)",   bg: "#f43f5e", fg: "#ffffff" },
+    { label: "Orange — orange-500",         bg: "#f97316", fg: "#ffffff" },
+    { label: "Hot pink — pink-500",          bg: "#ec4899", fg: "#ffffff" },
+    { label: "Magenta — fuchsia-500",        bg: "#d946ef", fg: "#ffffff" },
+    { label: "Purple — violet-500",          bg: "#8b5cf6", fg: "#ffffff" },
+    { label: "Sky blue — sky-500",           bg: "#0ea5e9", fg: "#ffffff" },
+    { label: "Cyan — cyan-400",              bg: "#22d3ee", fg: "#0c4a6e" },
+    { label: "Lime — lime-400",              bg: "#a3e635", fg: "#1a2e05" },
+    { label: "Emerald — emerald-500",        bg: "#10b981", fg: "#ffffff" },
+    { label: "Yellow — yellow-300",          bg: "#fde047", fg: "#422006" },
+    { label: "White on stone-900",           bg: "#fafaf9", fg: "#1c1917" },
+    { label: "Black on amber-400",           bg: "#1c1917", fg: "#fbbf24" },
+  ];
+
+  const grid = document.querySelector(".grid");
+  for (const s of swatches) {
+    const wrap = document.createElement("div");
+    wrap.className = "flex items-center gap-4";
+    wrap.innerHTML = `
+      <button class="relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-stone-900 bg-amber-400 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2v4"/><path d="M16 2v4"/>
+          <rect width="18" height="18" x="3" y="4" rx="2"/>
+          <path d="M3 10h18"/>
+        </svg>
+        <span class="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 px-1 text-[10px] font-black shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+              style="background:${s.bg}; color:${s.fg};">
+          1
+        </span>
+      </button>
+      <div class="text-amber-100">
+        <div class="text-sm font-black tracking-wider uppercase">${s.label}</div>
+        <div class="text-xs font-mono text-amber-100/50">${s.bg.toUpperCase()} on ${s.fg.toUpperCase()}</div>
+      </div>
+    `;
+    grid.appendChild(wrap);
+  }
+</script>
+</body>
+</html>

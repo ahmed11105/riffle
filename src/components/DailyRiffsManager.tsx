@@ -40,23 +40,24 @@ function nextDayIndex(
   return 1;
 }
 
-// Daily Riffs is now a popup, not always-on inline UI. The manager
-// renders three things in sequence:
-//  1. A small floating calendar pill (always visible) that re-opens
-//     the modal on demand.
-//  2. The modal itself, with the 7-tile grid + the claim affordance
-//     embedded in the highlighted tile.
-//  3. Auto-open behavior: the first time today the player visits and
-//     a claim is available, the modal pops itself open. After they
-//     claim OR close, we set a per-day flag in localStorage so we
-//     don't re-trigger on every navigation.
+// Daily Riffs popup. Modal-only — the trigger now lives in the
+// ribbon (RibbonDailyButton). Two paths to open the modal:
+//   - The ribbon button's onClick fires OPEN_DAILY_EVENT, we listen.
+//   - /daily fires OPEN_DAILY_EVENT after the player completes today's
+//     puzzle, but only the first time today (AUTO_SHOWN_KEY guard).
+//     Onboarding + How-to-play already crowd the first-visit flow, so
+//     deferring the daily-claim popup to AFTER the round keeps the
+//     intro moment from drowning in modals.
+//
+// Once the player has already claimed today, the modal shows a
+// "next claim in" countdown to the UTC reset so they know when to
+// come back.
 export function DailyRiffsManager() {
   const { profile, refreshProfile, loading } = useAuth();
   const [today, setToday] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [justClaimed, setJustClaimed] = useState(false);
-  const autoShownRef = useRef(false);
   const claimTileRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -71,20 +72,8 @@ export function DailyRiffsManager() {
   }, [profile, today]);
   const highlightDay = claimedToday ? profile?.login_day_index ?? 1 : upcomingDay;
 
-  // Auto-open on first eligible visit per day.
-  useEffect(() => {
-    if (loading || !profile || !today) return;
-    if (claimedToday) return;
-    if (autoShownRef.current) return;
-    try {
-      const flag = localStorage.getItem(AUTO_SHOWN_KEY);
-      if (flag === today) return;
-    } catch {}
-    autoShownRef.current = true;
-    setOpen(true);
-  }, [loading, profile, today, claimedToday]);
-
-  // Open on demand from the ribbon's Daily icon button.
+  // Open on demand from the ribbon's Daily icon button OR from
+  // /daily after the round ends. Both dispatch OPEN_DAILY_EVENT.
   useEffect(() => {
     function handle() {
       setOpen(true);
@@ -201,9 +190,7 @@ function DailyRiffsDialog({
             Daily Riffs
           </span>
           {claimedToday ? (
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
-              ✓ Claimed today
-            </span>
+            <NextClaimCountdown />
           ) : (
             <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
               Day {upcomingDay} ready
@@ -266,5 +253,34 @@ function DailyRiffsDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+// Live countdown to the next UTC midnight reset. Mirrors the
+// /daily NextDailyCountdown — once the player has claimed today,
+// the modal swaps the "Day N ready" caption for this so they
+// know when to come back. Updates once per second while the
+// modal is open.
+function NextClaimCountdown() {
+  const [text, setText] = useState("");
+  useEffect(() => {
+    function tick() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setUTCHours(24, 0, 0, 0);
+      const ms = next.getTime() - now.getTime();
+      const h = Math.floor(ms / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
+      const s = Math.floor((ms % 60_000) / 1000);
+      setText(`${h}h ${m}m ${s}s`);
+    }
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
+      Next claim · {text}
+    </span>
   );
 }
