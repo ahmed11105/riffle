@@ -110,7 +110,7 @@ export function RibbonIconButtonShell({
       {badge && (
         <span
           aria-hidden
-          className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-rose-500 px-1 text-[10px] font-black text-white shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
+          className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-stone-900 bg-pink-500 px-1 text-[10px] font-black text-white shadow-[0_1px_0_0_rgba(0,0,0,0.9)]"
         >
           {badge}
         </span>

@@ -61,7 +61,7 @@ export function AdminDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Admin tools"
-        className="fixed inset-y-0 right-0 z-[111] flex w-full max-w-[520px] flex-col border-l-4 border-stone-900 bg-stone-950 text-stone-100 shadow-[-6px_0_0_0_rgba(0,0,0,0.7)]"
+        className="fixed inset-y-0 right-0 z-[111] flex w-full max-w-[600px] flex-col border-l-4 border-stone-900 bg-stone-950 text-stone-100 shadow-[-6px_0_0_0_rgba(0,0,0,0.7)]"
       >
         <header className="relative flex items-center justify-between border-b-4 border-stone-900 bg-stone-900 px-5 py-4">
           <div>

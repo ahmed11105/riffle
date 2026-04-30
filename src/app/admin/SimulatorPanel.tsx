@@ -27,30 +27,22 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
     tournament: { ...state.tournament },
   };
 
-  // Streak: longest_streak >= current_streak. Whichever was typed
-  // last wins; the other gets bumped to match.
   const cur = next.streak.current_streak;
   const lng = next.streak.longest_streak;
   if (cur != null && lng != null && cur > lng) {
     if (touched.includes("longest_streak")) {
-      next.streak.current_streak = lng; // user lowered longest, current follows
+      next.streak.current_streak = lng;
     } else {
-      next.streak.longest_streak = cur; // user raised current, longest follows
+      next.streak.longest_streak = cur;
     }
   }
   if (cur != null && cur < 0) next.streak.current_streak = 0;
   if (lng != null && lng < 0) next.streak.longest_streak = 0;
 
-  // Freezes always 0..2.
   if (next.streak.freezes_available != null) {
     next.streak.freezes_available = Math.max(0, Math.min(2, next.streak.freezes_available));
   }
 
-  // pre_break_streak only meaningful with broken_at. If user sets
-  // pre_break_streak but no broken_at, default broken_at to "now"
-  // so the restore offer can render. If they set broken_at but no
-  // pre_break_streak, default pre_break_streak to 3 (the restore
-  // offer's threshold).
   if (next.streak.pre_break_streak != null && next.streak.pre_break_streak > 0 && !next.streak.broken_at) {
     if (!touched.includes("broken_at")) {
       next.streak.broken_at = new Date().toISOString();
@@ -62,12 +54,10 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
     }
   }
 
-  // Coin balance non-negative.
   if (next.profile.coin_balance != null && next.profile.coin_balance < 0) {
     next.profile.coin_balance = 0;
   }
 
-  // Login day index 0..7. login_last_claimed_on can't be in the future.
   if (next.profile.login_day_index != null) {
     next.profile.login_day_index = Math.max(0, Math.min(7, next.profile.login_day_index));
   }
@@ -76,9 +66,6 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
     next.profile.login_last_claimed_on = today;
   }
 
-  // last_claimed implies day index >= 1. day index >= 1 implies
-  // last_claimed exists (so we don't show day-N-ready when there
-  // was no prior claim recorded).
   if (next.profile.login_last_claimed_on && (next.profile.login_day_index ?? 0) < 1) {
     if (!touched.includes("login_day_index")) {
       next.profile.login_day_index = 1;
@@ -90,7 +77,6 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
     }
   }
 
-  // broken_at can't be in the future either.
   if (next.streak.broken_at) {
     const ms = new Date(next.streak.broken_at).getTime();
     if (Number.isFinite(ms) && ms > Date.now()) {
@@ -98,7 +84,6 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
     }
   }
 
-  // Tournament score non-negative; milestone_claims must be unique.
   if (next.tournament.score != null && next.tournament.score < 0) {
     next.tournament.score = 0;
   }
@@ -115,11 +100,10 @@ function reconcile(state: SimulationState, touched: string[]): SimulationState {
 // AuthProvider + Tournament/Daily managers overlay on top of real
 // data. The real DB is never written by anything in this panel.
 //
-// Each field is a controlled input. "Apply" persists; the rest of
-// the app reacts via the SIM_CHANGE_EVENT bus.
+// Each field is a controlled input. Edits save instantly; the rest
+// of the app reacts via the SIM_CHANGE_EVENT bus.
 //
-// Presets stored under riffle:sim:presets keyed by name. Save the
-// current values, switch between named profiles, delete when done.
+// Presets stored under riffle:sim:presets keyed by name.
 export function SimulatorPanel() {
   const { profile: realProfile, streak: realStreak } = useAuth();
   const [draft, setDraft] = useState<SimulationState>(EMPTY_SIM);
@@ -157,8 +141,6 @@ export function SimulatorPanel() {
     persist(EMPTY_SIM);
   }
 
-  // Empty if no overrides are set under any section. Used to show a
-  // helpful "you haven't set anything yet" hint when sim is ON.
   const noOverrides =
     Object.keys(draft.profile).length === 0 &&
     Object.keys(draft.streak).length === 0 &&
@@ -186,193 +168,163 @@ export function SimulatorPanel() {
     savePresets(next);
   }
 
-  const activeBg = draft.active
-    ? "border-emerald-700 bg-emerald-50"
-    : "border-stone-300 bg-stone-50";
-
   return (
-    <div className={`rounded-3xl border-4 p-5 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)] ${activeBg}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-black uppercase tracking-wider text-stone-500">
-            Simulator
-          </div>
-          <h2 className="text-lg font-black uppercase tracking-tight">
-            UX stage simulator
-          </h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Overlays UI state for testing the daily / tournament / icon flows
-            at any stage. <span className="font-black">Local-only</span> — does
-            not touch the database, does not change the real game.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={toggleActive}
-          className={`shrink-0 rounded-full border-2 border-stone-900 px-4 py-2 text-xs font-black uppercase tracking-wider shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] ${
-            draft.active ? "bg-emerald-400 text-stone-900" : "bg-stone-200 text-stone-700"
-          }`}
-        >
-          {draft.active ? "Simulating · ON" : "Simulating · OFF"}
-        </button>
-      </div>
+    <div className="flex flex-col gap-5">
+      <HeroToggle
+        active={draft.active}
+        noOverrides={noOverrides}
+        onToggle={toggleActive}
+      />
 
-      {draft.active && noOverrides && (
-        <div className="mt-4 rounded-2xl border-2 border-amber-700 bg-amber-100 p-3 text-sm text-amber-900">
-          <span className="font-black uppercase tracking-wider">Tip:</span> the
-          overlay is on but no fields are set, so the UI looks identical to the
-          real game. Set any value below — it&rsquo;ll apply instantly.
-        </div>
-      )}
+      <Section title="Profile & Daily" subtitle="Riffs · login calendar · flags">
+        <NumberField
+          label="Coin balance"
+          unit="Riffs"
+          value={draft.profile.coin_balance}
+          real={realProfile?.coin_balance}
+          onChange={(v) => patchProfile({ coin_balance: v })}
+        />
+        <NumberField
+          label="Login day index"
+          helper="1–7. 0 = unstarted."
+          value={draft.profile.login_day_index}
+          real={realProfile?.login_day_index}
+          onChange={(v) => patchProfile({ login_day_index: v })}
+          min={0}
+          max={7}
+        />
+        <DateField
+          label="Last claimed on"
+          helper="Today = claimed today. Yesterday = ready to claim now. Blank = never claimed."
+          value={draft.profile.login_last_claimed_on ?? null}
+          real={realProfile?.login_last_claimed_on ?? null}
+          onChange={(v) => patchProfile({ login_last_claimed_on: v })}
+        />
+        <BoolField
+          label="Starter pack claimed"
+          value={draft.profile.starter_pack_claimed}
+          real={realProfile?.starter_pack_claimed}
+          onChange={(v) => patchProfile({ starter_pack_claimed: v })}
+        />
+        <BoolField
+          label="Pro active"
+          helper="UI gates only — does not unlock real entitlements."
+          value={draft.profile.is_pro}
+          real={realProfile?.is_pro}
+          onChange={(v) => patchProfile({ is_pro: v })}
+        />
+      </Section>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2">
-        {/* Profile / Riffs / Login calendar */}
-        <Section title="Profile & Daily Calendar">
-          <NumberField
-            label="Coin balance (Riffs)"
-            value={draft.profile.coin_balance}
-            real={realProfile?.coin_balance}
-            onChange={(v) => patchProfile({ coin_balance: v })}
-          />
-          <NumberField
-            label="Login day index (1–7, 0 = unstarted)"
-            value={draft.profile.login_day_index}
-            real={realProfile?.login_day_index}
-            onChange={(v) => patchProfile({ login_day_index: v })}
-            min={0}
-            max={7}
-          />
-          <DateField
-            label="Last claimed on (UTC date)"
-            value={draft.profile.login_last_claimed_on ?? null}
-            real={realProfile?.login_last_claimed_on ?? null}
-            onChange={(v) => patchProfile({ login_last_claimed_on: v })}
-            helper="Today = claimed today. Yesterday = ready to claim now. Blank = never claimed."
-          />
-          <BoolField
-            label="Starter pack claimed"
-            value={draft.profile.starter_pack_claimed}
-            real={realProfile?.starter_pack_claimed}
-            onChange={(v) => patchProfile({ starter_pack_claimed: v })}
-          />
-          <BoolField
-            label="Pro active (UI gates only)"
-            value={draft.profile.is_pro}
-            real={realProfile?.is_pro}
-            onChange={(v) => patchProfile({ is_pro: v })}
-          />
-        </Section>
+      <Section title="Streak" subtitle="Current run · freezes · restore offer">
+        <NumberField
+          label="Current streak"
+          value={draft.streak.current_streak}
+          real={realStreak?.current_streak}
+          onChange={(v) => patchStreak({ current_streak: v })}
+          min={0}
+        />
+        <NumberField
+          label="Longest streak"
+          value={draft.streak.longest_streak}
+          real={realStreak?.longest_streak}
+          onChange={(v) => patchStreak({ longest_streak: v })}
+          min={0}
+        />
+        <NumberField
+          label="Freezes available"
+          helper="0–2."
+          value={draft.streak.freezes_available}
+          real={realStreak?.freezes_available}
+          onChange={(v) => patchStreak({ freezes_available: v })}
+          min={0}
+          max={2}
+        />
+        <NumberField
+          label="Pre-break streak"
+          helper="Used by the restore offer."
+          value={draft.streak.pre_break_streak}
+          real={realStreak?.pre_break_streak}
+          onChange={(v) => patchStreak({ pre_break_streak: v })}
+          min={0}
+        />
+        <DateTimeField
+          label="Broken at"
+          helper="Set within the last 48h to show the Restore Streak offer."
+          value={draft.streak.broken_at ?? null}
+          real={realStreak?.broken_at ?? null}
+          onChange={(v) => patchStreak({ broken_at: v })}
+        />
+      </Section>
 
-        {/* Streak */}
-        <Section title="Streak">
-          <NumberField
-            label="Current streak"
-            value={draft.streak.current_streak}
-            real={realStreak?.current_streak}
-            onChange={(v) => patchStreak({ current_streak: v })}
-            min={0}
-          />
-          <NumberField
-            label="Longest streak"
-            value={draft.streak.longest_streak}
-            real={realStreak?.longest_streak}
-            onChange={(v) => patchStreak({ longest_streak: v })}
-            min={0}
-          />
-          <NumberField
-            label="Freezes available (0–2)"
-            value={draft.streak.freezes_available}
-            real={realStreak?.freezes_available}
-            onChange={(v) => patchStreak({ freezes_available: v })}
-            min={0}
-            max={2}
-          />
-          <NumberField
-            label="Pre-break streak (for restore offer)"
-            value={draft.streak.pre_break_streak}
-            real={realStreak?.pre_break_streak}
-            onChange={(v) => patchStreak({ pre_break_streak: v })}
-            min={0}
-          />
-          <DateTimeField
-            label="Broken at"
-            value={draft.streak.broken_at ?? null}
-            real={realStreak?.broken_at ?? null}
-            onChange={(v) => patchStreak({ broken_at: v })}
-            helper="Set within the last 48h to show the Restore Streak offer."
-          />
-        </Section>
+      <Section
+        title="Tournament"
+        subtitle="Active event score · milestones"
+        note={
+          <>
+            Overrides apply to the currently-active event (whatever{" "}
+            <code className="font-mono text-amber-200/80">get_active_event</code>{" "}
+            returns). Make sure an event is seeded for the icon to render.
+          </>
+        }
+      >
+        <NumberField
+          label="Your event score"
+          value={draft.tournament.score}
+          onChange={(v) => patchTournament({ score: v })}
+          min={0}
+        />
+        <NumbersListField
+          label="Milestones already claimed"
+          helper="Comma-separated indexes (0-based). e.g. 0,1 marks the first two as claimed."
+          value={draft.tournament.milestone_claims}
+          onChange={(v) => patchTournament({ milestone_claims: v })}
+        />
+      </Section>
 
-        {/* Tournament */}
-        <Section title="Tournament" wide>
-          <p className="mb-2 text-xs text-stone-600">
-            Overrides apply to the currently-active event (whichever one{" "}
-            <code className="font-mono">get_active_event</code> returns). Make
-            sure an event is seeded in the DB for the icon to render.
-          </p>
-          <NumberField
-            label="Your event score"
-            value={draft.tournament.score}
-            onChange={(v) => patchTournament({ score: v })}
-            min={0}
-          />
-          <NumbersListField
-            label="Milestones already claimed (indexes, comma-separated)"
-            value={draft.tournament.milestone_claims}
-            onChange={(v) => patchTournament({ milestone_claims: v })}
-            helper="e.g. '0,1' marks the first two as claimed. Indexes start at 0."
-          />
-        </Section>
-      </div>
-
-      {/* Actions */}
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-stone-700 bg-stone-900/60 px-4 py-3">
+        <span className="text-[11px] text-stone-400">Edits save instantly.</span>
         <button
           type="button"
           onClick={clearAll}
-          className="rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-2 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
+          className="rounded-full border-2 border-stone-900 bg-stone-100 px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)]"
         >
-          Reset all overlays
+          Reset overlays
         </button>
-        <span className="text-xs font-bold text-stone-500">
-          Edits save instantly
-        </span>
       </div>
 
-      {/* Presets */}
-      <div className="mt-5 rounded-2xl border-2 border-stone-900 bg-stone-50 p-4">
-        <div className="text-xs font-black uppercase tracking-wider text-stone-500">
-          Presets
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+      <Section title="Presets" subtitle="Save sets of overrides for reuse">
+        <div className="flex items-stretch gap-2">
           <input
             type="text"
             value={presetName}
             onChange={(e) => setPresetName(e.target.value)}
             placeholder="Name this preset"
-            className="min-w-0 flex-1 rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1.5 text-sm"
+            className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 focus:border-amber-300 focus:outline-none"
           />
           <button
             type="button"
             onClick={saveAsPreset}
             disabled={!presetName.trim()}
-            className="rounded-full border-2 border-stone-900 bg-amber-400 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-50"
+            className="rounded-full border-2 border-stone-900 bg-amber-400 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.9)] disabled:opacity-40"
           >
-            Save current
+            Save
           </button>
         </div>
         {Object.keys(presets).length === 0 ? (
-          <p className="mt-3 text-xs text-stone-500">No presets saved yet.</p>
+          <p className="text-[11px] text-stone-500">No presets saved yet.</p>
         ) : (
-          <ul className="mt-3 flex flex-wrap gap-2">
+          <ul className="flex flex-col gap-1.5">
             {Object.keys(presets)
               .sort()
               .map((name) => (
-                <li key={name} className="flex items-center gap-1">
+                <li
+                  key={name}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-stone-700 bg-stone-900 px-3 py-2"
+                >
                   <button
                     type="button"
                     onClick={() => loadPreset(name)}
-                    className="rounded-full border-2 border-stone-900 bg-stone-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-stone-200"
+                    className="flex-1 truncate text-left text-sm font-bold text-stone-100 hover:text-amber-200"
                   >
                     {name}
                   </button>
@@ -380,57 +332,169 @@ export function SimulatorPanel() {
                     type="button"
                     aria-label={`Delete preset ${name}`}
                     onClick={() => deletePreset(name)}
-                    className="rounded-full border-2 border-stone-900 bg-rose-200 px-2 py-1 text-[10px] font-black text-rose-900 shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-rose-300"
+                    className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-300 hover:bg-rose-500/20"
                   >
-                    ×
+                    Delete
                   </button>
                 </li>
               ))}
           </ul>
         )}
+      </Section>
+    </div>
+  );
+}
+
+function HeroToggle({
+  active,
+  noOverrides,
+  onToggle,
+}: {
+  active: boolean;
+  noOverrides: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border-2 p-4 ${
+        active
+          ? "border-emerald-500/60 bg-emerald-500/10"
+          : "border-stone-700 bg-stone-900/60"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div
+            className={`text-[10px] font-black uppercase tracking-[0.25em] ${
+              active ? "text-emerald-300" : "text-stone-400"
+            }`}
+          >
+            {active ? "● Live overlay" : "○ Overlay off"}
+          </div>
+          <div className="mt-1 text-base font-black uppercase tracking-tight text-stone-100">
+            UX stage simulator
+          </div>
+          <p className="mt-1 text-xs text-stone-300/80">
+            Layers UI state on top of the real game so you can preview every
+            stage of the daily, streak, login calendar, and tournament flows.{" "}
+            <span className="font-black text-stone-200">Local-only</span> —
+            never writes to the database.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`shrink-0 rounded-full border-2 border-stone-900 px-4 py-2 text-[11px] font-black uppercase tracking-wider shadow-[0_2px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] ${
+            active
+              ? "bg-emerald-400 text-stone-900 hover:bg-emerald-300"
+              : "bg-stone-200 text-stone-900 hover:bg-white"
+          }`}
+        >
+          {active ? "Turn off" : "Turn on"}
+        </button>
       </div>
+
+      {active && noOverrides && (
+        <div className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+          Overlay is on but no fields are set, so the UI matches the real game.
+          Set any value below — it&rsquo;ll apply instantly.
+        </div>
+      )}
     </div>
   );
 }
 
 function Section({
   title,
+  subtitle,
+  note,
   children,
-  wide = false,
 }: {
   title: string;
+  subtitle?: string;
+  note?: React.ReactNode;
   children: React.ReactNode;
-  wide?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border-2 border-stone-900 bg-stone-50 p-4 ${wide ? "md:col-span-2" : ""}`}>
-      <div className="mb-3 text-xs font-black uppercase tracking-wider text-stone-500">
-        {title}
+    <section className="rounded-2xl border border-stone-700 bg-stone-900/60 p-4">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-amber-200">
+          {title}
+        </h3>
+        {subtitle && (
+          <span className="truncate text-[10px] text-stone-500">{subtitle}</span>
+        )}
       </div>
-      <div className="flex flex-col gap-3">{children}</div>
-    </div>
+      {note && (
+        <p className="mb-3 text-[11px] leading-relaxed text-stone-400">{note}</p>
+      )}
+      <div className="flex flex-col gap-3.5">{children}</div>
+    </section>
   );
 }
 
-function RealHint({ value }: { value: string | number | boolean | null | undefined }) {
+function FieldRow({
+  label,
+  helper,
+  unit,
+  real,
+  children,
+}: {
+  label: string;
+  helper?: string;
+  unit?: string;
+  real?: string | number | boolean | null | undefined;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12px] font-bold text-stone-200">
+          {label}
+          {unit && (
+            <span className="ml-1.5 text-[10px] font-normal uppercase tracking-wider text-stone-500">
+              {unit}
+            </span>
+          )}
+        </span>
+        <RealHint value={real} />
+      </div>
+      {children}
+      {helper && (
+        <span className="text-[11px] leading-snug text-stone-500">{helper}</span>
+      )}
+    </label>
+  );
+}
+
+function RealHint({
+  value,
+}: {
+  value: string | number | boolean | null | undefined;
+}) {
   if (value === undefined) return null;
   const display =
     value === null
-      ? "(none)"
+      ? "—"
       : typeof value === "boolean"
         ? value
           ? "true"
           : "false"
         : String(value);
   return (
-    <span className="text-[10px] font-mono text-stone-400">
-      Real: {display}
+    <span className="font-mono text-[10px] text-stone-500">
+      real: <span className="text-stone-300">{display}</span>
     </span>
   );
 }
 
+const inputClass =
+  "w-full rounded-lg border border-stone-700 bg-stone-950 px-3 py-2 font-mono text-sm text-stone-100 focus:border-amber-300 focus:outline-none";
+
 function NumberField({
   label,
+  helper,
+  unit,
   value,
   onChange,
   real,
@@ -438,6 +502,8 @@ function NumberField({
   max,
 }: {
   label: string;
+  helper?: string;
+  unit?: string;
   value: number | undefined;
   onChange: (v: number | undefined) => void;
   real?: number | null;
@@ -445,161 +511,141 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="flex flex-col gap-0.5 text-sm">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-stone-700">{label}</span>
-        <input
-          type="number"
-          value={value ?? ""}
-          min={min}
-          max={max}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") onChange(undefined);
-            else onChange(Number(raw));
-          }}
-          className="w-24 rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 font-mono text-right text-sm"
-        />
-      </span>
-      <RealHint value={real ?? undefined} />
-    </label>
+    <FieldRow label={label} helper={helper} unit={unit} real={real ?? undefined}>
+      <input
+        type="number"
+        value={value ?? ""}
+        min={min}
+        max={max}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (raw === "") onChange(undefined);
+          else onChange(Number(raw));
+        }}
+        className={inputClass}
+      />
+    </FieldRow>
   );
 }
 
 function BoolField({
   label,
+  helper,
   value,
   onChange,
   real,
 }: {
   label: string;
+  helper?: string;
   value: boolean | undefined;
   onChange: (v: boolean | undefined) => void;
   real?: boolean | null;
 }) {
   const state = value === undefined ? "real" : value ? "true" : "false";
   return (
-    <label className="flex flex-col gap-0.5 text-sm">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-stone-700">{label}</span>
-        <select
-          value={state}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v === "real") onChange(undefined);
-            else onChange(v === "true");
-          }}
-          className="rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 text-sm"
-        >
-          <option value="real">— (use real)</option>
-          <option value="true">Force true</option>
-          <option value="false">Force false</option>
-        </select>
-      </span>
-      <RealHint value={real ?? undefined} />
-    </label>
+    <FieldRow label={label} helper={helper} real={real ?? undefined}>
+      <select
+        value={state}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "real") onChange(undefined);
+          else onChange(v === "true");
+        }}
+        className={inputClass}
+      >
+        <option value="real">— Use real value</option>
+        <option value="true">Force true</option>
+        <option value="false">Force false</option>
+      </select>
+    </FieldRow>
   );
 }
 
 function DateField({
   label,
+  helper,
   value,
   onChange,
-  helper,
   real,
 }: {
   label: string;
+  helper?: string;
   value: string | null | undefined;
   onChange: (v: string | null | undefined) => void;
-  helper?: string;
   real?: string | null;
 }) {
   return (
-    <label className="flex flex-col gap-0.5 text-sm">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-stone-700">{label}</span>
-        <input
-          type="date"
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-          className="rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 font-mono text-sm"
-        />
-      </span>
-      <RealHint value={real ?? undefined} />
-      {helper && <span className="text-[11px] text-stone-500">{helper}</span>}
-    </label>
+    <FieldRow label={label} helper={helper} real={real ?? undefined}>
+      <input
+        type="date"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className={inputClass}
+      />
+    </FieldRow>
   );
 }
 
 function DateTimeField({
   label,
+  helper,
   value,
   onChange,
-  helper,
   real,
 }: {
   label: string;
+  helper?: string;
   value: string | null | undefined;
   onChange: (v: string | null | undefined) => void;
-  helper?: string;
   real?: string | null;
 }) {
   const local = value ? new Date(value).toISOString().slice(0, 16) : "";
   return (
-    <label className="flex flex-col gap-0.5 text-sm">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-stone-700">{label}</span>
-        <input
-          type="datetime-local"
-          value={local}
-          onChange={(e) =>
-            onChange(e.target.value ? new Date(e.target.value).toISOString() : null)
-          }
-          className="rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 font-mono text-sm"
-        />
-      </span>
-      <RealHint value={real ?? undefined} />
-      {helper && <span className="text-[11px] text-stone-500">{helper}</span>}
-    </label>
+    <FieldRow label={label} helper={helper} real={real ?? undefined}>
+      <input
+        type="datetime-local"
+        value={local}
+        onChange={(e) =>
+          onChange(e.target.value ? new Date(e.target.value).toISOString() : null)
+        }
+        className={inputClass}
+      />
+    </FieldRow>
   );
 }
 
 function NumbersListField({
   label,
+  helper,
   value,
   onChange,
-  helper,
 }: {
   label: string;
+  helper?: string;
   value: number[] | undefined;
   onChange: (v: number[] | undefined) => void;
-  helper?: string;
 }) {
   const text = value?.join(",") ?? "";
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="flex items-center justify-between gap-3">
-        <span className="text-stone-700">{label}</span>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (!raw.trim()) {
-              onChange(undefined);
-              return;
-            }
-            const nums = raw
-              .split(",")
-              .map((s) => Number(s.trim()))
-              .filter((n) => Number.isFinite(n));
-            onChange(nums);
-          }}
-          placeholder="0,1,2"
-          className="w-32 rounded-full border-2 border-stone-900 bg-stone-50 px-3 py-1 font-mono text-sm"
-        />
-      </span>
-      {helper && <span className="text-[11px] text-stone-500">{helper}</span>}
-    </label>
+    <FieldRow label={label} helper={helper}>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (!raw.trim()) {
+            onChange(undefined);
+            return;
+          }
+          const nums = raw
+            .split(",")
+            .map((s) => Number(s.trim()))
+            .filter((n) => Number.isFinite(n));
+          onChange(nums);
+        }}
+        placeholder="0,1,2"
+        className={inputClass}
+      />
+    </FieldRow>
   );
 }
