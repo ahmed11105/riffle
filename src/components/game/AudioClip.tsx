@@ -100,18 +100,31 @@ export function AudioClip({
     const a = audioRef.current;
     if (!a) return;
     if (playing) {
-      try {
-        a.currentTime = 0;
-      } catch {}
-      setCurrentTime(0);
+      // Resume from where the playhead is unless the snippet has
+      // already played all the way to the end (or beyond — the
+      // stop timer can leave currentTime at maxSeconds). In that
+      // case rewind so the next click replays the whole clip.
+      const atOrPastEnd = a.currentTime >= maxSeconds - 0.01;
+      if (atOrPastEnd) {
+        try {
+          a.currentTime = 0;
+        } catch {}
+        setCurrentTime(0);
+      }
       a.play().catch(() => onEndedRef.current());
       registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist, trackId);
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
+      // Schedule the auto-stop based on time remaining in this clip,
+      // not the full clip length, so resumed playback ends at the
+      // same moment a fresh play would.
+      const remainingMs = Math.max(0, (maxSeconds - a.currentTime) * 1000);
       stopTimerRef.current = window.setTimeout(() => {
         a.pause();
         onEndedRef.current();
-      }, maxSeconds * 1000);
+      }, remainingMs);
     } else {
+      // Pause in place — currentTime is preserved so the next play
+      // resumes from the same spot.
       a.pause();
       if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
     }
