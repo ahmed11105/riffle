@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useAdminTapGesture } from "@/lib/admin";
 
 export function Logo({ className = "" }: { className?: string }) {
   const tap = useAdminTapGesture();
   return (
-    <div
+    <Link
+      href="/"
       className={`inline-flex cursor-pointer items-center gap-2 font-black tracking-tight ml-12 sm:ml-0 ${className}`}
-      aria-label="Riffle"
+      aria-label="Riffle home"
       onClick={tap}
     >
       <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border-2 border-stone-900 bg-amber-400 text-stone-900 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">
@@ -20,6 +22,6 @@ export function Logo({ className = "" }: { className?: string }) {
         </svg>
       </span>
       <span className="text-3xl">Riffle</span>
-    </div>
+    </Link>
   );
 }

@@ -48,20 +48,28 @@ export function AdminDrawer({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
+  // Always render so we can transition translate-x. When closed the
+  // drawer sits off-screen at translate-x-full and the backdrop is
+  // pointer-events-none so it doesn't intercept clicks on the page.
   return (
     <>
       <div
-        className="fixed inset-0 z-[110] bg-stone-950/60 backdrop-blur-sm"
+        className={[
+          "fixed inset-0 z-[110] bg-stone-950/60 backdrop-blur-sm transition-opacity duration-300",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        ].join(" ")}
         onClick={onClose}
         aria-hidden
       />
       <aside
         role="dialog"
-        aria-modal="true"
+        aria-modal={open}
         aria-label="Admin tools"
-        className="fixed inset-y-0 right-0 z-[111] flex w-full max-w-[600px] flex-col border-l-4 border-stone-900 bg-stone-950 text-stone-100 shadow-[-6px_0_0_0_rgba(0,0,0,0.7)]"
+        aria-hidden={!open}
+        className={[
+          "fixed inset-y-0 right-0 z-[111] flex w-full max-w-[600px] flex-col border-l-4 border-stone-900 bg-stone-950 text-stone-100 shadow-[-6px_0_0_0_rgba(0,0,0,0.7)] transition-transform duration-300 ease-out",
+          open ? "translate-x-0" : "pointer-events-none translate-x-full",
+        ].join(" ")}
       >
         <header className="relative flex items-center justify-between border-b-4 border-stone-900 bg-stone-900 px-5 py-4">
           <div>
