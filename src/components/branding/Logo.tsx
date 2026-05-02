@@ -8,7 +8,7 @@ export function Logo({ className = "" }: { className?: string }) {
   return (
     <Link
       href="/"
-      className={`inline-flex cursor-pointer items-center gap-2 font-black tracking-tight ml-12 sm:ml-0 ${className}`}
+      className={`inline-flex cursor-pointer items-center gap-2 font-black tracking-tight ${className}`}
       aria-label="Riffle home"
       onClick={tap}
     >

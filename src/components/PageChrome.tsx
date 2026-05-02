@@ -18,7 +18,7 @@ import { SimulationBanner } from "@/components/SimulationBanner";
 export function PageChrome() {
   return (
     <header className="w-full">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 pt-4 pb-3 sm:pt-6 sm:pb-4">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-center px-6 pt-4 pb-3 sm:justify-between sm:pt-6 sm:pb-4">
         <Logo />
         <MainNav />
       </div>
