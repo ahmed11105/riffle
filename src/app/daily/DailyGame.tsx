@@ -15,8 +15,7 @@ import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
-import { openDailyRiffs } from "@/lib/dailyRiffs";
-import { recordEvent } from "@/lib/metrics";
+import { recordEvent, awardXp } from "@/lib/metrics";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
@@ -118,22 +117,12 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         const result = data as { freeze_consumed?: boolean } | null;
         if (result?.freeze_consumed) setFreezeConsumed(true);
         refreshStreak();
-        // Bump challenge metrics for solving the daily.
+        // Bump challenge metrics for solving the daily, and grant
+        // XP — daily wins are the biggest XP source.
         if (done.correct) {
           recordEvent("daily_solve");
+          awardXp(50);
         }
-        // Surface the Daily Riffs claim modal once the round wraps,
-        // not on first visit. Gated by a per-day localStorage flag so
-        // navigating away and back doesn't re-trigger.
-        try {
-          const flag = localStorage.getItem("riffle:daily-riffs:auto-shown");
-          if (flag !== today) {
-            localStorage.setItem("riffle:daily-riffs:auto-shown", today);
-            // Tiny delay so the RevealCard mounts first and the
-            // modal arrives a beat after the result lands.
-            window.setTimeout(() => openDailyRiffs(), 1200);
-          }
-        } catch {}
       });
   }, [done, track.id, user, refreshStreak]);
 

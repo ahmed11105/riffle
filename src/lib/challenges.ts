@@ -96,9 +96,16 @@ export const DAILY_TEMPLATES: DailyChallengeTemplate[] = [
   },
 ];
 
+// Templates that should ALWAYS appear in the daily selection so the
+// player's most natural actions (showing up, solving the daily) map
+// to a visible challenge. Without pinning, the random rotation
+// would sometimes hide these and a player solving the daily would
+// see no related challenge tick — feels broken.
+const PINNED_KEYS = new Set(["open_app", "solve_daily"]);
+
 // Deterministic per-date selection so every player sees the same
-// challenges on a given UTC day. Same shuffle every load — no
-// surprise reshuffles mid-day.
+// challenges on a given UTC day. Pinned templates land first; the
+// remaining slots are filled by a date-seeded shuffle of the rest.
 function dateSeed(dateStr: string): number {
   let h = 0;
   for (const ch of dateStr) h = (h * 31 + ch.charCodeAt(0)) | 0;
@@ -109,13 +116,19 @@ export function selectDailyChallenges(
   dateStr: string,
   count = 5,
 ): DailyChallengeTemplate[] {
+  const pinned = DAILY_TEMPLATES.filter((t) => PINNED_KEYS.has(t.key));
+  const rest = DAILY_TEMPLATES.filter((t) => !PINNED_KEYS.has(t.key));
+
   const seed = dateSeed(dateStr);
-  const indexed = DAILY_TEMPLATES.map((t, i) => ({
+  const indexedRest = rest.map((t, i) => ({
     t,
     rank: (seed * 9301 + i * 49297) % 233280,
   }));
-  indexed.sort((a, b) => a.rank - b.rank);
-  return indexed.slice(0, count).map((x) => x.t);
+  indexedRest.sort((a, b) => a.rank - b.rank);
+
+  const remaining = Math.max(0, count - pinned.length);
+  const filler = indexedRest.slice(0, remaining).map((x) => x.t);
+  return [...pinned, ...filler];
 }
 
 export function todayDateStr(): string {

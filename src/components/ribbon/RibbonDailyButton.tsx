@@ -36,7 +36,7 @@ export function RibbonDailyButton() {
   return (
     <RibbonIconButtonShell
       label="Daily challenges"
-      onClick={openDailyRiffs}
+      onClick={(el) => openDailyRiffs(el?.getBoundingClientRect())}
       icon={<CalendarDays className="h-5 w-5" />}
       appearance={count > 0 ? "active" : "hollow"}
       badge={count > 0 ? String(count) : undefined}
@@ -61,7 +61,7 @@ export function RibbonIconButtonShell({
 }: {
   label: string;
   icon: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (el: HTMLButtonElement | null) => void;
   badge?: string;
   disabled?: boolean;
   // 0..1 — when supplied, draws a thin progress bar inside the
@@ -89,7 +89,7 @@ export function RibbonIconButtonShell({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => onClick?.(e.currentTarget)}
       disabled={disabled || !onClick}
       aria-label={label}
       className={`${base} ${skin}`}

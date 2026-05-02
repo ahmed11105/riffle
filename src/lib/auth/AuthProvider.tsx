@@ -16,6 +16,7 @@ import {
   applyStreakOverlay,
   useSimulation,
 } from "@/lib/simulation";
+import { PROFILE_REFRESH_EVENT } from "@/lib/metrics";
 
 export type Profile = {
   id: string;
@@ -170,10 +171,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
+    // Anyone can dispatch riffle:profile-refresh after a server
+    // write to ask us to re-fetch. Centralizing the listener here
+    // keeps every helper that mutates the profile (awardXp, claim
+    // RPCs, etc.) from having to thread refreshProfile through
+    // their own props.
+    function onRefresh() {
+      fetchProfileAndStreak();
+    }
+    window.addEventListener(PROFILE_REFRESH_EVENT, onRefresh);
+
     return () => {
       mounted = false;
       clearTimeout(failsafe);
       subscription.subscription.unsubscribe();
+      window.removeEventListener(PROFILE_REFRESH_EVENT, onRefresh);
     };
   }, [ensureSession, fetchProfileAndStreak, supabase]);
 

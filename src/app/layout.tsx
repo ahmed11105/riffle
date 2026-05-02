@@ -17,6 +17,7 @@ import { ChallengesManager } from "@/components/ChallengesManager";
 import { TournamentManager } from "@/components/TournamentManager";
 import { CoinFlyLayer } from "@/components/CoinFlyLayer";
 import { PageChrome } from "@/components/PageChrome";
+import { LevelUpToast } from "@/components/LevelUpToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -111,6 +112,7 @@ export default function RootLayout({
               <TournamentManager />
             </Suspense>
             <CoinFlyLayer />
+            <LevelUpToast />
             {children}
             <Footer />
             <Suspense>

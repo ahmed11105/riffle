@@ -16,7 +16,7 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import type { HintKind } from "@/lib/riffs/hints";
 import { useAudioStore } from "@/lib/store/audio";
-import { recordEvent } from "@/lib/metrics";
+import { recordEvent, awardXp } from "@/lib/metrics";
 
 import { LEVELS } from "@/lib/game/levels";
 const SOLO_PLAYED_KEY = "riffle:played:solo";
@@ -199,6 +199,9 @@ export function SoloGame() {
       recordEvent("solo_solve");
       recordEvent("solo_round");
       if (levelIdx === 0) recordEvent("solo_first_listen");
+      // 10 XP per Solo solve, +5 bonus for the 0.5s level (skill +
+      // recognizes faster solves).
+      awardXp(10 + (levelIdx === 0 ? 5 : 0));
     } else if (levelIdx >= LEVELS.length - 1) {
       setDone({ correct: false });
       setStats((s) => ({ ...s, played: s.played + 1 }));

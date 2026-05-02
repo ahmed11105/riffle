@@ -3,6 +3,7 @@ import { Mascot } from "@/components/branding/Mascot";
 import { HomeStats } from "@/components/HomeStats";
 import { HomeHelpLinks } from "@/components/HomeHelpLinks";
 import { StarterPackOffer } from "@/components/StarterPackOffer";
+import { DailyWheelAutoShow } from "@/components/DailyWheelAutoShow";
 
 // ActiveEventBanner removed from the home page for now — the user
 // flagged the big "Decade Showdown" card as visually heavy. The
@@ -13,6 +14,7 @@ import { StarterPackOffer } from "@/components/StarterPackOffer";
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center px-6 py-4 text-[--color-foreground] sm:py-10">
+      <DailyWheelAutoShow />
       <section className="mt-2 flex w-full max-w-xl flex-col items-center text-center sm:mt-6">
         {/* Mascot shrinks on mobile so the buttons sit within thumb reach
             without scrolling. */}
