@@ -134,7 +134,7 @@ export function DailyWheel() {
 
         // 5 XP for spinning the wheel — small, but rewards the
         // daily-login behavior.
-        awardXp(5);
+        awardXp(5, "Daily spin");
         refreshProfile();
         refreshStreak();
         // Tell the challenges UI a metric event happened (so the

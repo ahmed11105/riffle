@@ -93,7 +93,7 @@ export function RibbonTournamentButton() {
     <RibbonIconButtonShell
       label="Tournament"
       icon={<Trophy className="h-5 w-5" />}
-      onClick={openTournament}
+      onClick={(el) => openTournament(el?.getBoundingClientRect())}
       appearance={appearance}
       progress={progress}
       badge={claimable > 0 ? String(claimable) : undefined}

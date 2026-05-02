@@ -201,7 +201,10 @@ export function SoloGame() {
       if (levelIdx === 0) recordEvent("solo_first_listen");
       // 10 XP per Solo solve, +5 bonus for the 0.5s level (skill +
       // recognizes faster solves).
-      awardXp(10 + (levelIdx === 0 ? 5 : 0));
+      awardXp(
+        10 + (levelIdx === 0 ? 5 : 0),
+        levelIdx === 0 ? "Solo solve · 0.5s" : "Solo solve",
+      );
     } else if (levelIdx >= LEVELS.length - 1) {
       setDone({ correct: false });
       setStats((s) => ({ ...s, played: s.played + 1 }));

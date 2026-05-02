@@ -164,3 +164,14 @@ body {
   50%      { box-shadow: 0 2px 0 0 rgba(0,0,0,0.7), inset 0 1px 0 0 rgba(255,255,255,0.5), 0 0 0 6px rgba(16,185,129,0); }
 }
 .animate-pulse-soft { animation: pulse-soft 1.6s ease-in-out infinite; }
+
+/* XP source flash chip — fades in, drifts up, fades out. Used by the
+   HomeStats XP bar to show "+10 XP · Challenge claimed" the instant
+   awardXp fires, so the player understands what just gave them XP. */
+@keyframes xp-flash {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.85); }
+  15%  { opacity: 1; transform: translateY(0) scale(1); }
+  70%  { opacity: 1; transform: translateY(-12px) scale(1); }
+  100% { opacity: 0; transform: translateY(-22px) scale(0.95); }
+}
+.riffle-xp-flash { animation: xp-flash 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }

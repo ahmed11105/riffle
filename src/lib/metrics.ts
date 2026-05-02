@@ -48,20 +48,46 @@ export const LEVEL_UP_EVENT = "riffle:level-up";
 // / login_* / etc.). AuthProvider listens and refetches.
 export const PROFILE_REFRESH_EVENT = "riffle:profile-refresh";
 
+// Fired immediately when awardXp is called (optimistic). Carries the
+// amount + a human-readable source label so the HomeStats XP bar can
+// flash a transient "+N XP from <source>" chip. Decoupled from
+// PROFILE_REFRESH_EVENT so the chip shows the granular source even
+// when the bar update is debounced/refetched.
+export const XP_GAINED_EVENT = "riffle:xp-gained";
+
+export type XpGainedDetail = {
+  amount: number;
+  source: string;
+};
+
 export function requestProfileRefresh() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(PROFILE_REFRESH_EVENT));
 }
 
 export type LevelUpDetail = {
+  // Level reached after this grant.
   level: number;
+  // Sum of per-level rewards across the levels gained.
   reward_riffs: number;
+  // 1 for a normal level-up; >1 when an XP grant crossed multiple
+  // thresholds (rare — the toast renders "Lv prev → Lv new" in that
+  // case so the player sees how much they jumped).
   levels_gained: number;
 };
 
-export function awardXp(amount: number) {
+export function awardXp(amount: number, source = "Action") {
   if (typeof window === "undefined") return;
   if (amount <= 0) return;
+  // Optimistic source flash. Fires before the round-trip so the
+  // player sees feedback the instant they act, not after the server
+  // resolves. If the RPC errors below, the bar simply doesn't update
+  // — the chip is purely informational and short-lived (~1.5s).
+  window.dispatchEvent(
+    new CustomEvent<XpGainedDetail>(XP_GAINED_EVENT, {
+      detail: { amount, source },
+    }),
+  );
   const supabase = createClient();
   supabase.rpc("add_xp", { p_amount: amount }).then(({ data, error }) => {
     if (error) {

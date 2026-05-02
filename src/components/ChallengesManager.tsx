@@ -8,6 +8,7 @@ import { flyCoinsFrom } from "@/lib/coinFly";
 import { X, Crown } from "lucide-react";
 import { RiffsIcon } from "@/components/RiffsIcon";
 import { DailyWheel } from "@/components/DailyWheel";
+import { IconModalShell } from "@/components/IconModalShell";
 import { OPEN_DAILY_EVENT, type OpenDailyDetail } from "@/lib/dailyRiffs";
 import { METRIC_CHANGE_EVENT, dailyMetricKey, recordEvent, awardXp } from "@/lib/metrics";
 import {
@@ -34,7 +35,6 @@ type Tab = "spin" | "daily" | "weekly" | "achievements";
 export function ChallengesManager() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [open, setOpen] = useState(false);
-  const [animatedIn, setAnimatedIn] = useState(false);
   const [tab, setTab] = useState<Tab>("spin");
   const [metrics, setMetrics] = useState<Record<string, number>>({});
   const [claimedKeys, setClaimedKeys] = useState<Set<string>>(new Set());
@@ -78,41 +78,22 @@ export function ChallengesManager() {
   // Open via ribbon Daily button. Pick the initial tab based on
   // whether the daily wheel has been spun yet — fresh visit lands
   // on Spin (the high-anticipation moment), already-spun visit lands
-  // on Daily (the still-actionable list).
+  // on Daily (the still-actionable list). Animation + escape +
+  // click-outside are owned by IconModalShell.
   useEffect(() => {
     function handle(e: Event) {
       const detail = (e as CustomEvent<OpenDailyDetail>).detail;
       setOriginRect(detail?.originRect ?? null);
       setTab(claimedKeys.has("daily_wheel") ? "daily" : "spin");
       setOpen(true);
-      // Two-frame delay so the modal mounts at scale(0) before
-      // transitioning to scale(1). Without this the first frame
-      // already has scale(1) and there's no animation.
-      setAnimatedIn(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setAnimatedIn(true));
-      });
     }
     window.addEventListener(OPEN_DAILY_EVENT, handle);
     return () => window.removeEventListener(OPEN_DAILY_EVENT, handle);
   }, [claimedKeys]);
 
   function handleClose() {
-    // Reverse the scale-out animation. The modal stays mounted while
-    // animating; we only fully unmount after the transition end.
-    setAnimatedIn(false);
-    window.setTimeout(() => setOpen(false), 240);
+    setOpen(false);
   }
-
-  // Escape closes.
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
 
   const today = todayDateStr();
   const templates = useMemo(() => selectDailyChallenges(today), [today]);
@@ -144,7 +125,7 @@ export function ChallengesManager() {
       setClaimedKeys((prev) => new Set(prev).add(t.key));
       // 10 XP per claimed challenge — keeps the level curve moving
       // for the player who actually engages with the daily list.
-      awardXp(10);
+      awardXp(10, "Challenge claimed");
       await refreshProfile();
     } finally {
       setBusyKey(null);
@@ -174,44 +155,15 @@ export function ChallengesManager() {
   }, [claimableCount]);
 
   if (loading || !profile) return null;
-  if (!open) return null;
-
-  // Compute the origin point so the modal scales out FROM the icon
-  // that triggered it. Falls back to viewport center if the origin
-  // wasn't supplied (e.g. opened by the home page auto-show, which
-  // isn't anchored to a button).
-  const originPoint = originRect
-    ? {
-        x: originRect.left + originRect.width / 2,
-        y: originRect.top + originRect.height / 2,
-      }
-    : null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Daily challenges"
-      className={`fixed inset-0 z-[80] flex items-center justify-center px-4 transition-[backdrop-filter,background-color] duration-200 ${
-        animatedIn
-          ? "bg-stone-950/80 backdrop-blur-sm"
-          : "bg-stone-950/0 backdrop-blur-0"
-      }`}
-      onClick={handleClose}
+    <IconModalShell
+      open={open}
+      onClose={handleClose}
+      originRect={originRect}
+      ariaLabel="Daily challenges"
+      contentClassName="relative w-full max-w-md pt-7"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md pt-7"
-        style={{
-          transformOrigin: originPoint
-            ? `${originPoint.x}px ${originPoint.y}px`
-            : "50% 50%",
-          transform: animatedIn ? "scale(1)" : "scale(0.05)",
-          opacity: animatedIn ? 1 : 0,
-          transition:
-            "transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-        }}
-      >
         {/* Crown medallion — circular gold disk with the lucide
             Crown SVG inside. Sits half above / half overlapping the
             gold header. Sibling of (not inside) the overflow-hidden
@@ -305,8 +257,7 @@ export function ChallengesManager() {
           {tab === "achievements" && <ComingSoon kind="Achievements" />}
         </div>
         </div>
-      </div>
-    </div>
+    </IconModalShell>
   );
 }
 
