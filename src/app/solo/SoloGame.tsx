@@ -10,7 +10,6 @@ import { SoloAdBreak } from "@/components/game/SoloAdBreak";
 import { HintPanel } from "@/components/game/HintPanel";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useAdminMode } from "@/lib/admin";
-import { RiffsBadge } from "@/components/RiffsBadge";
 import type { RiffleTrack } from "@/lib/itunes";
 import { DAILY_POOL, toRiffleTrack } from "@/lib/daily/pick";
 import { fuzzyMatchTitle } from "@/lib/utils";
@@ -263,14 +262,11 @@ export function SoloGame() {
 
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-6">
-      <div className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-amber-100/60">
-        <div className="flex items-center gap-3">
-          <span>
-            {stats.solved}/{stats.played} solved
-          </span>
-          <span>#{stats.played + 1}</span>
-        </div>
-        <RiffsBadge />
+      <div className="flex w-full items-center gap-3 text-xs font-bold uppercase tracking-wider text-amber-100/60">
+        <span>
+          {stats.solved}/{stats.played} solved
+        </span>
+        <span>#{stats.played + 1}</span>
       </div>
       <ClipLadder currentLevel={LEVELS[levelIdx]} guesses={ladder} />
       {!done && (

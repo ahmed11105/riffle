@@ -293,19 +293,21 @@ function Card({
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="relative w-full max-w-md overflow-hidden rounded-2xl border-4 border-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)]"
+      className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border-4 border-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)]"
       style={{
         background: accent
           ? `linear-gradient(135deg, ${accent}, #292524)`
           : "rgb(28 25 23 / 0.95)",
       }}
     >
-      <div className="p-5">
-        <CloseButton
-          onClick={onClose}
-          ariaLabel="Close tournament"
-          className="absolute -right-2 -top-2"
-        />
+      {/* Close button stays sticky outside the scroll area so it's
+          always reachable even on tall mobile content. */}
+      <CloseButton
+        onClick={onClose}
+        ariaLabel="Close tournament"
+        className="absolute -right-2 -top-2 z-10"
+      />
+      <div className="overflow-y-auto p-5">
         {children}
       </div>
     </div>
