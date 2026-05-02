@@ -278,20 +278,20 @@ function ChallengeCard({
               {template.reward.extra.label}
             </div>
           )}
-          <button
-            type="button"
-            onClick={(e) => onClaim(e.currentTarget)}
-            disabled={!ready || busy}
-            className={`min-w-[60px] rounded-full border-2 border-stone-900 px-3 py-1 text-[11px] font-black uppercase tracking-wider shadow-[0_2px_0_0_rgba(0,0,0,0.7)] disabled:cursor-not-allowed disabled:opacity-60 ${
-              claimed
-                ? "bg-emerald-100 text-emerald-900"
-                : ready
-                  ? "bg-emerald-500 text-emerald-50 hover:bg-emerald-400"
-                  : "bg-stone-200 text-stone-700"
-            }`}
-          >
-            {claimed ? "✓" : ready ? (busy ? "…" : "Claim") : "Locked"}
-          </button>
+          {(claimed || ready) && (
+            <button
+              type="button"
+              onClick={(e) => onClaim(e.currentTarget)}
+              disabled={claimed || busy}
+              className={`min-w-[60px] rounded-full border-2 border-stone-900 px-3 py-1 text-[11px] font-black uppercase tracking-wider shadow-[0_2px_0_0_rgba(0,0,0,0.7)] disabled:cursor-not-allowed ${
+                claimed
+                  ? "bg-emerald-100 text-emerald-900"
+                  : "bg-emerald-500 text-emerald-50 hover:bg-emerald-400"
+              }`}
+            >
+              {claimed ? "✓" : busy ? "…" : "Claim"}
+            </button>
+          )}
         </div>
       </div>
     </div>
