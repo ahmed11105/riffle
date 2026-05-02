@@ -16,6 +16,7 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
 import { openDailyRiffs } from "@/lib/dailyRiffs";
+import { recordEvent } from "@/lib/metrics";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
@@ -117,6 +118,10 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         const result = data as { freeze_consumed?: boolean } | null;
         if (result?.freeze_consumed) setFreezeConsumed(true);
         refreshStreak();
+        // Bump challenge metrics for solving the daily.
+        if (done.correct) {
+          recordEvent("daily_solve");
+        }
         // Surface the Daily Riffs claim modal once the round wraps,
         // not on first visit. Gated by a per-day localStorage flag so
         // navigating away and back doesn't re-trigger.

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { EVENTS } from "@/lib/analytics/events";
 import { sfxClaim, sfxSpend } from "@/lib/sfx";
+import { recordEvent } from "@/lib/metrics";
 
 export type SpendResult =
   | { ok: true; newBalance: number }
@@ -41,6 +42,8 @@ export function useRiffs() {
         await refreshProfile();
         track(EVENTS.HINT_PURCHASED, { amount, reason, ref });
         sfxSpend();
+        recordEvent("riffs_spent", amount);
+        if (reason === "hint") recordEvent("hint_used");
         return { ok: true, newBalance: data as number };
       } finally {
         setSpending(false);

@@ -16,6 +16,7 @@ import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import type { HintKind } from "@/lib/riffs/hints";
 import { useAudioStore } from "@/lib/store/audio";
+import { recordEvent } from "@/lib/metrics";
 
 import { LEVELS } from "@/lib/game/levels";
 const SOLO_PLAYED_KEY = "riffle:played:solo";
@@ -195,10 +196,14 @@ export function SoloGame() {
       setDone({ correct: true, levelSolved: LEVELS[levelIdx] });
       setStats((s) => ({ solved: s.solved + 1, played: s.played + 1 }));
       markPlayed(current.id);
+      recordEvent("solo_solve");
+      recordEvent("solo_round");
+      if (levelIdx === 0) recordEvent("solo_first_listen");
     } else if (levelIdx >= LEVELS.length - 1) {
       setDone({ correct: false });
       setStats((s) => ({ ...s, played: s.played + 1 }));
       markPlayed(current.id);
+      recordEvent("solo_round");
     } else {
       sfxWrongAttempt();
       setLevelIdx(levelIdx + 1);

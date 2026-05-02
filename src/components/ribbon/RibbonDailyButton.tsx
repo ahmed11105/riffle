@@ -5,23 +5,24 @@ import { CalendarDays } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { openDailyRiffs } from "@/lib/dailyRiffs";
 
-// Daily ribbon button. Two visual states:
-//   - claimable (amber, with a "1" badge) when today's reward is
-//     still up for grabs. Includes the case where the player opened
-//     but didn't actually claim — the server source of truth still
-//     says "not claimed today" so the badge sticks.
-//   - hollow (transparent fill, neutral icon) once they've claimed.
-//     Returns to amber the next day automatically because
-//     login_last_claimed_on no longer matches today.
+// Daily ribbon button. Listens for the "claimable count" event the
+// ChallengesManager emits whenever metrics or claims change. Badge
+// shows the number of challenges currently ready to claim; when 0
+// the icon goes hollow (nothing to do right now).
 export function RibbonDailyButton() {
   const { profile, loading } = useAuth();
-  const [today, setToday] = useState<string | null>(null);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    setToday(new Date().toISOString().slice(0, 10));
+    function handle(e: Event) {
+      const detail = (e as CustomEvent<{ count: number }>).detail;
+      setCount(detail?.count ?? 0);
+    }
+    window.addEventListener("riffle:claimable-count", handle);
+    return () => window.removeEventListener("riffle:claimable-count", handle);
   }, []);
 
-  if (loading || !profile || !today) {
+  if (loading || !profile) {
     return (
       <RibbonIconButtonShell
         label="Daily"
@@ -32,15 +33,13 @@ export function RibbonDailyButton() {
     );
   }
 
-  const claimable = profile.login_last_claimed_on !== today;
-
   return (
     <RibbonIconButtonShell
-      label="Daily Riffs"
+      label="Daily challenges"
       onClick={openDailyRiffs}
       icon={<CalendarDays className="h-5 w-5" />}
-      appearance={claimable ? "active" : "hollow"}
-      badge={claimable ? "1" : undefined}
+      appearance={count > 0 ? "active" : "hollow"}
+      badge={count > 0 ? String(count) : undefined}
     />
   );
 }

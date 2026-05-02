@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { RiffsIcon } from "@/components/RiffsIcon";
 import { flyCoinsFrom } from "@/lib/coinFly";
+import { recordEvent } from "@/lib/metrics";
 
 const REWARD = 10;
 const AD_SECONDS = 15;
@@ -44,6 +45,7 @@ export function BonusRoundPrompt() {
         if (result.ok) {
           flyCoinsFrom(buttonRef.current, REWARD);
           setState("claimed");
+          recordEvent("bonus_ad");
           try {
             localStorage.setItem(STORAGE_KEY, dayKey());
           } catch {}

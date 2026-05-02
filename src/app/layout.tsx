@@ -13,7 +13,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { MobileNav } from "@/components/MobileNav";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { ReferralRedeemer } from "@/components/ReferralRedeemer";
-import { DailyRiffsManager } from "@/components/DailyRiffsManager";
+import { ChallengesManager } from "@/components/ChallengesManager";
 import { TournamentManager } from "@/components/TournamentManager";
 import { CoinFlyLayer } from "@/components/CoinFlyLayer";
 import { PageChrome } from "@/components/PageChrome";
@@ -105,7 +105,7 @@ export default function RootLayout({
               <PageChrome />
             </Suspense>
             <Suspense>
-              <DailyRiffsManager />
+              <ChallengesManager />
             </Suspense>
             <Suspense>
               <TournamentManager />
