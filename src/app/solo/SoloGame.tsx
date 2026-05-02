@@ -209,14 +209,17 @@ export function SoloGame() {
     if (!current || done) return;
     const nextG = [...guesses, "skipped" as const];
     setGuesses(nextG);
-    setPlaying(false);
     if (levelIdx >= LEVELS.length - 1) {
-      // Final skip → fail reveal. RevealCard plays the fail cue; suppress
-      // the skip blip so it doesn't stack underneath.
+      // Final skip → fail reveal. AudioClip unmounts when `done` is
+      // truthy, so the audio stops naturally; no explicit pause needed.
       setDone({ correct: false });
       setStats((s) => ({ ...s, played: s.played + 1 }));
       markPlayed(current.id);
     } else {
+      // Audio keeps playing through the skip — the AudioClip effect
+      // re-runs with the new (longer) maxSeconds and reschedules its
+      // auto-stop timer. Audio only pauses on explicit play/pause
+      // click or when it hits the snippet end.
       sfxSkip();
       setLevelIdx(levelIdx + 1);
     }

@@ -171,12 +171,15 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
     if (done) return;
     const nextArr: Guess[] = [...guesses, { kind: "skipped", value: "" }];
     setGuesses(nextArr);
-    setPlaying(false);
     if (levelIdx >= LEVELS.length - 1) {
-      // Final skip → fail reveal. Let RevealCard's fail cue ring out alone
-      // instead of stacking the skip blip on top of it.
+      // Final skip → fail reveal. AudioClip unmounts when `done` is
+      // truthy, so the audio stops naturally; no explicit pause needed.
       setDone({ correct: false, guesses: nextArr });
     } else {
+      // Audio keeps playing through the skip — the AudioClip effect
+      // re-runs with the new (longer) maxSeconds and reschedules its
+      // auto-stop timer to the new boundary. Audio only pauses on
+      // explicit play/pause click or when it hits the snippet end.
       sfxSkip();
       setLevelIdx(levelIdx + 1);
     }
