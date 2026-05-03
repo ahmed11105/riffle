@@ -223,27 +223,34 @@ export function ChallengesManager() {
     }
   }
 
-  // Notification dot count: claimable challenges + an unspun daily
-  // wheel. Used by RibbonDailyButton via a custom event since this
-  // manager owns the count source of truth.
-  const claimableCount = useMemo(() => {
-    let n = 0;
+  // Per-tab "ready to claim" counts. Each tab dot/badge in the
+  // <nav> below reads its own count from this object so the user
+  // can spot a claimable reward without having to open every tab.
+  // The total across all tabs is what the ribbon's Daily icon badge
+  // shows.
+  const tabCounts = useMemo(() => {
+    let dailyN = 0;
     for (const t of templates) {
       if (claimedKeys.has(t.key)) continue;
-      if (progressForDaily(t) >= t.target) n++;
+      if (progressForDaily(t) >= t.target) dailyN++;
     }
+    let weeklyN = 0;
     for (const t of WEEKLY_TEMPLATES) {
       if (weeklyClaimedKeys.has(t.key)) continue;
-      if (progressForWeekly(t) >= t.target) n++;
+      if (progressForWeekly(t) >= t.target) weeklyN++;
     }
+    let achievementsN = 0;
     for (const t of ACHIEVEMENT_TEMPLATES) {
       if (achievementClaimedKeys.has(t.key)) continue;
-      if (progressForAchievement(t) >= t.target) n++;
+      if (progressForAchievement(t) >= t.target) achievementsN++;
     }
-    if (!claimedKeys.has("daily_wheel")) n++;
-    return n;
+    const spinN = claimedKeys.has("daily_wheel") ? 0 : 1;
+    return { spin: spinN, daily: dailyN, weekly: weeklyN, achievements: achievementsN };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templates, metrics, claimedKeys, weeklyClaimedKeys, achievementClaimedKeys]);
+
+  const claimableCount =
+    tabCounts.spin + tabCounts.daily + tabCounts.weekly + tabCounts.achievements;
 
   useEffect(() => {
     window.dispatchEvent(
@@ -313,18 +320,30 @@ export function ChallengesManager() {
             ] as { id: Tab; label: string }[]
           ).map(({ id, label }) => {
             const active = tab === id;
+            const count = tabCounts[id];
             return (
               <button
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`flex-1 rounded-lg px-2 py-2 text-[11px] font-black uppercase tracking-wider transition ${
+                aria-label={
+                  count > 0 ? `${label} (${count} ready to claim)` : label
+                }
+                className={`relative flex-1 rounded-lg px-2 py-2 text-[11px] font-black uppercase tracking-wider transition ${
                   active
                     ? "bg-gradient-to-b from-amber-300 to-amber-500 text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.5)]"
                     : "text-amber-100/60 hover:bg-stone-900 hover:text-amber-100"
                 }`}
               >
                 {label}
+                {count > 0 && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-stone-900 bg-pink-500 px-1 text-[9px] font-black text-white shadow-[0_1px_0_0_rgba(0,0,0,0.7)]"
+                  >
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
