@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Flame, Snowflake } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { XP_GAINED_EVENT, type XpGainedDetail } from "@/lib/metrics";
 
@@ -46,13 +47,15 @@ export function HomeStats() {
   return (
     <div className="mt-8 flex w-full max-w-sm flex-col items-center gap-3">
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-amber-100/60">
-        <div>
-          <span className="font-black text-amber-300">🔥 {loading ? "—" : streakNum}</span>{" "}
+        <div className="inline-flex items-center gap-1.5">
+          <Flame className="h-4 w-4 text-orange-500" strokeWidth={2.5} fill="currentColor" />
+          <span className="font-black text-amber-300">{loading ? "—" : streakNum}</span>{" "}
           day streak
         </div>
         {!loading && freezes > 0 && (
-          <div>
-            <span className="font-black text-cyan-300">❄️ {freezes}</span>{" "}
+          <div className="inline-flex items-center gap-1.5">
+            <Snowflake className="h-4 w-4 text-cyan-300" strokeWidth={2.5} />
+            <span className="font-black text-cyan-300">{freezes}</span>{" "}
             {freezes === 1 ? "freeze" : "freezes"}
           </div>
         )}

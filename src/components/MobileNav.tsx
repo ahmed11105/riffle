@@ -56,14 +56,18 @@ export function MobileNav() {
 
   return (
     <>
+      {/* Bare amber icon — no circle/border. The Logo also has an
+          amber square; matching them was making the hamburger read
+          as part of the brand mark. Keeping the 44×44 hit target for
+          touch accessibility but the icon itself is what's visible. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open menu"
         aria-expanded={open}
-        className="fixed left-3 top-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border-2 border-stone-900 bg-amber-400 text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] sm:hidden"
+        className="fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center text-amber-400 drop-shadow-[0_2px_0_rgba(0,0,0,0.9)] sm:hidden"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-7 w-7" strokeWidth={3} />
       </button>
 
       <div

@@ -19,18 +19,44 @@ function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// ISO-week key for the given UTC date string (YYYY-MM-DD). Format
+// matches Postgres `to_char(.., 'IYYY-"W"IW')`, e.g. "2026-W18".
+// Implementation: ISO week is the Mon..Sun week containing the
+// Thursday of that week.
+export function isoWeekKey(dateStr?: string): string {
+  const base = dateStr ? new Date(dateStr + "T00:00:00Z") : new Date();
+  const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
 export function dailyMetricKey(metric: string, dateStr?: string): string {
   return `${metric}:${dateStr ?? todayUtc()}`;
+}
+
+export function weeklyMetricKey(metric: string, dateStr?: string): string {
+  return `${metric}:${isoWeekKey(dateStr)}`;
+}
+
+export function lifetimeMetricKey(metric: string): string {
+  return `${metric}:lifetime`;
 }
 
 export function recordEvent(metric: string, amount = 1) {
   if (typeof window === "undefined") return;
   const supabase = createClient();
+  // bump_metric_all fans the event into daily + weekly + lifetime
+  // metric keys atomically server-side, so the Daily / Weekly / Goals
+  // challenge tabs all read consistent counts after a single round
+  // trip.
   supabase
-    .rpc("bump_metric", { p_key: dailyMetricKey(metric), p_amount: amount })
+    .rpc("bump_metric_all", { p_metric: metric, p_amount: amount })
     .then(({ error }) => {
       if (error) {
-        console.warn("bump_metric failed:", error.message, "metric:", metric);
+        console.warn("bump_metric_all failed:", error.message, "metric:", metric);
         return;
       }
       window.dispatchEvent(new Event(METRIC_CHANGE_EVENT));

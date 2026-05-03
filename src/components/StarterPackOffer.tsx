@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Coins, Star, Music } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { STARTER_PACK } from "@/lib/riffs/starter-pack";
 
@@ -85,19 +86,19 @@ export function StarterPackOffer() {
       </h2>
       <ul className="mt-3 space-y-1.5 text-sm font-bold text-stone-900">
         <li className="flex items-center gap-2">
-          <span className="text-base">💰</span>
+          <Coins className="h-4 w-4 text-amber-700" strokeWidth={2.5} fill="currentColor" />
           <span>
             <span className="font-black">{STARTER_PACK.riffs} Riffs</span> straight to your balance
           </span>
         </li>
         <li className="flex items-center gap-2">
-          <span className="text-base">⭐</span>
+          <Star className="h-4 w-4 text-amber-600" strokeWidth={2.5} fill="currentColor" />
           <span>
             <span className="font-black">{STARTER_PACK.proTrialDays} days of Pro</span> — no ads, unlimited rooms
           </span>
         </li>
         <li className="flex items-center gap-2">
-          <span className="text-base">🎵</span>
+          <Music className="h-4 w-4 text-stone-900" strokeWidth={2.5} />
           <span>Founder badge on your profile</span>
         </li>
       </ul>

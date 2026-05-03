@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pause, Play, SkipForward, X, LogOut, XCircle, Share2, Check } from "lucide-react";
+import { Pause, Play, SkipForward, X, LogOut, XCircle, Share2, Check, Medal } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
@@ -1050,7 +1050,12 @@ function FinalResults({
         </div>
         <ol className="space-y-2">
           {sorted.map((p, i) => {
-            const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+            // Top three get colored Medal icons (gold/silver/bronze);
+            // 4th+ shows a numeric rank chip. Replaces 🥇🥈🥉 emoji
+            // for cross-device parity (some Android/Linux browsers
+            // render unset emoji as boxes).
+            const medalColor =
+              i === 0 ? "text-amber-500" : i === 1 ? "text-stone-400" : i === 2 ? "text-orange-700" : null;
             return (
               <li
                 key={p.display_name}
@@ -1061,8 +1066,12 @@ function FinalResults({
                 }
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-8 text-center font-mono text-sm font-black text-stone-600">
-                    {medal}
+                  <span className="flex w-8 items-center justify-center font-mono text-sm font-black text-stone-600">
+                    {medalColor ? (
+                      <Medal className={`h-5 w-5 ${medalColor}`} strokeWidth={2.5} />
+                    ) : (
+                      <>#{i + 1}</>
+                    )}
                   </span>
                   <span className="font-black">{p.display_name}</span>
                 </div>

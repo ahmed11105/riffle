@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Trophy, X } from "lucide-react";
+import { Trophy, X, Medal, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
@@ -216,7 +216,7 @@ export function TournamentManager() {
         <div className="flex-1 overflow-y-auto p-4">
           {!event ? (
             <div className="rounded-2xl border-2 border-dashed border-violet-500/50 bg-gradient-to-br from-violet-900/30 via-stone-900 to-violet-900/30 p-8 text-center shadow-[inset_0_1px_0_0_rgba(196,181,253,0.15)]">
-              <div className="text-4xl">🏆</div>
+              <Trophy className="mx-auto h-10 w-10 text-amber-300" strokeWidth={2.5} />
               <div className="mt-2 text-base font-black uppercase tracking-[0.2em] text-violet-200">
                 No active event
               </div>
@@ -281,8 +281,12 @@ export function TournamentManager() {
                         />
                       )}
                       <div className="relative flex items-center gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-stone-900 bg-gradient-to-br from-violet-200 via-violet-300 to-violet-500 text-2xl shadow-[0_2px_0_0_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.5)]">
-                          {isClaimed ? "✓" : `🏅`}
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-stone-900 bg-gradient-to-br from-violet-200 via-violet-300 to-violet-500 shadow-[0_2px_0_0_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.5)]">
+                          {isClaimed ? (
+                            <Check className="h-6 w-6 text-emerald-700" strokeWidth={3} />
+                          ) : (
+                            <Medal className="h-6 w-6 text-amber-700" strokeWidth={2.5} />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-black leading-tight">
@@ -320,7 +324,7 @@ export function TournamentManager() {
                           }`}
                         >
                           {isClaimed ? (
-                            <span>✓</span>
+                            <Check className="h-3.5 w-3.5" strokeWidth={4} />
                           ) : busy ? (
                             <span>…</span>
                           ) : (

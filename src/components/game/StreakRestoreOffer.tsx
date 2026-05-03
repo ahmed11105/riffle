@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Flame } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
@@ -56,7 +57,7 @@ export function StreakRestoreOffer() {
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border-4 border-stone-900 bg-gradient-to-b from-amber-400 to-amber-500 px-5 py-4 text-stone-900 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">
       <div className="text-center">
-        <div className="text-2xl">🔥</div>
+        <Flame className="mx-auto h-7 w-7 text-orange-700" strokeWidth={2.5} fill="currentColor" />
         <div className="text-base font-black uppercase tracking-wider">
           Your {lost}-day streak broke
         </div>

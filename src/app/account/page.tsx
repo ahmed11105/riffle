@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Check, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
+import { AccountSecurity } from "@/app/account/AccountSecurity";
 
 export default function AccountPage() {
   const { user, profile, streak, isAnonymous, isPro, loading } = useAuth();
@@ -49,6 +50,8 @@ export default function AccountPage() {
           <Stat label="Riffs" value={balance} />
           <Stat label="Level" value={profile?.level ?? 1} />
         </section>
+
+        <AccountSecurity />
       </div>
       )}
     </main>

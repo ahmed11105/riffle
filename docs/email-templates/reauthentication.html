@@ -1,0 +1,59 @@
+<!--
+Subject: Confirm it's you on Riffle
+
+Paste this body into Supabase Auth → Email Templates → Reauthentication.
+Same Riffle shell as Magic Link, but the CTA region holds a 6-digit
+{{ .Token }} the user types back into the app instead of a clickable
+button — this email is OTP-based, not link-based.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Confirm it's you on Riffle</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#1a140c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#fef3c7;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#1a140c;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#fafaf9;border:4px solid #1c1917;border-radius:24px;box-shadow:0 8px 0 0 rgba(0,0,0,0.9);">
+            <tr>
+              <td style="padding:32px 32px 8px 32px;text-align:center;">
+                <div style="display:inline-block;width:52px;height:52px;line-height:52px;border-radius:14px;border:2px solid #1c1917;background-color:#fbbf24;color:#1c1917;font-weight:900;font-size:28px;box-shadow:0 4px 0 0 rgba(0,0,0,0.9);">R</div>
+                <h1 style="margin:20px 0 0 0;color:#1c1917;font-size:28px;font-weight:900;letter-spacing:-0.5px;">Confirm it's you</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 24px 32px;color:#44403c;font-size:16px;line-height:1.5;">
+                <p style="margin:16px 0 0 0;">
+                  Enter this code in Riffle to finish the action you started.
+                  The code expires in <strong>1 hour</strong>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:0 32px 8px 32px;">
+                <div style="display:inline-block;padding:18px 28px;background-color:#1c1917;color:#fbbf24;font-family:'SF Mono',ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:32px;font-weight:900;letter-spacing:0.4em;border:4px solid #1c1917;border-radius:14px;box-shadow:0 4px 0 0 rgba(0,0,0,0.9);">
+                  {{ .Token }}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 32px 32px 32px;color:#78716c;font-size:12px;line-height:1.5;border-top:2px solid #e7e5e4;">
+                <p style="margin:0;">
+                  Didn't request this? Don't share the code, and email
+                  <a href="mailto:support@riffle.cc" style="color:#b45309;text-decoration:underline;">support@riffle.cc</a>
+                  if you suspect someone else has access to your account.
+                </p>
+                <p style="margin:12px 0 0 0;">
+                  Riffle · daily song-guessing game · <a href="https://riffle.cc" style="color:#b45309;text-decoration:underline;">riffle.cc</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -2,11 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Share2, Check, Gift } from "lucide-react";
+import { Share2, Check, Gift, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { copyText } from "@/lib/clipboard";
 
 const REWARD = 100;
+
+const EMAIL_INVITE_ERRORS: Record<string, string> = {
+  invalid_email: "That doesn't look like a valid email address.",
+  self_invite: "You can't invite yourself.",
+  already_redeemed:
+    "Someone already used a Riffle invite for that email. Try a different friend.",
+  already_registered:
+    "That email is already on Riffle — they don't need an invite.",
+  anonymous_user: "Sign in first so we know who's inviting.",
+  not_authenticated: "Sign in first so we know who's inviting.",
+  code_alloc_failed: "Couldn't allocate a code. Try again.",
+  rate_limited:
+    "Too many invites sent recently — wait a few minutes and try again, or share the link directly above.",
+};
 
 type Redemption = {
   redeemed_email: string;
@@ -150,6 +164,9 @@ export default function InvitePage() {
             )}
           </section>
 
+          {/* Email a friend directly */}
+          <EmailInviteSection />
+
           {/* Stats */}
           <section className="grid grid-cols-2 gap-4">
             <div className="rounded-2xl border-4 border-stone-900 bg-stone-50 p-4 text-stone-900 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">
@@ -193,5 +210,97 @@ export default function InvitePage() {
         </div>
       )}
     </main>
+  );
+}
+
+// Email-an-invite section. Sibling to the link-share card so the
+// player can choose whichever delivery channel they prefer. POSTs to
+// /api/account/invite-friend, which uses Supabase's Invite User
+// flow + the existing /?ref=CODE redirect so the invite-redemption
+// pipeline stays unchanged.
+function EmailInviteSection() {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+
+  async function send() {
+    if (busy) return;
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErr(EMAIL_INVITE_ERRORS.invalid_email);
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/account/invite-friend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !json.ok) {
+        setErr(EMAIL_INVITE_ERRORS[json.error ?? ""] ?? "Couldn't send invite. Try again.");
+        return;
+      }
+      setSentTo(trimmed);
+      setEmail("");
+    } catch {
+      setErr("Network error. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-3xl border-4 border-stone-900 bg-stone-50 p-6 text-stone-900 shadow-[0_8px_0_0_rgba(0,0,0,0.9)]">
+      <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+        Or invite by email
+      </p>
+      <p className="mt-1 text-sm text-stone-600">
+        We&rsquo;ll send them a one-click invite. They join → you both get{" "}
+        <strong>{REWARD} Riffs</strong>.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setErr(null);
+            setSentTo(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") send();
+          }}
+          placeholder="friend@example.com"
+          disabled={busy}
+          autoComplete="email"
+          className="min-w-0 flex-1 rounded-full border-4 border-stone-900 bg-stone-100 px-4 py-2 text-sm font-bold text-stone-900 focus:outline-none focus:ring-4 focus:ring-amber-300 disabled:opacity-70"
+        />
+        <button
+          type="button"
+          onClick={send}
+          disabled={busy || email.trim().length === 0}
+          className="inline-flex items-center justify-center gap-2 rounded-full border-4 border-stone-900 bg-amber-400 px-5 py-2 text-sm font-black text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] disabled:opacity-60"
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Mail className="h-4 w-4" /> Send invite
+            </>
+          )}
+        </button>
+      </div>
+      {err && <p className="mt-2 text-xs font-bold text-rose-700">{err}</p>}
+      {sentTo && !err && (
+        <p className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+          <Check className="h-3.5 w-3.5" /> Invite sent to{" "}
+          <span className="font-mono">{sentTo}</span>
+        </p>
+      )}
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { HomeStats } from "@/components/HomeStats";
 import { HomeHelpLinks } from "@/components/HomeHelpLinks";
 import { StarterPackOffer } from "@/components/StarterPackOffer";
 import { DailyWheelAutoShow } from "@/components/DailyWheelAutoShow";
+import { PlayDailySplitButton } from "@/components/PlayDailySplitButton";
 
 // ActiveEventBanner removed from the home page for now — the user
 // flagged the big "Decade Showdown" card as visually heavy. The
@@ -26,13 +27,8 @@ export default function Home() {
           Name the tune.<br />
           <span className="text-amber-400">Trust your ear.</span>
         </h1>
-        <div className="mt-5 flex w-full flex-col gap-3 sm:mt-8 sm:flex-row sm:justify-center">
-          <Link
-            href="/daily"
-            className="rounded-full border-4 border-stone-900 bg-amber-400 px-6 py-3 text-base font-black text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] sm:px-8 sm:py-4 sm:text-lg"
-          >
-            Play today&rsquo;s song
-          </Link>
+        <div className="mt-5 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center">
+          <PlayDailySplitButton />
           <Link
             href="/rooms"
             className="rounded-full border-4 border-stone-900 bg-stone-50 px-6 py-3 text-base font-black text-stone-900 shadow-[0_6px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-1 active:shadow-[0_2px_0_0_rgba(0,0,0,0.9)] sm:px-8 sm:py-4 sm:text-lg"

@@ -5,16 +5,27 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim } from "@/lib/sfx";
 import { flyCoinsFrom } from "@/lib/coinFly";
-import { X, Crown } from "lucide-react";
+import { X, Crown, Lock, Check } from "lucide-react";
 import { RiffsIcon } from "@/components/RiffsIcon";
 import { DailyWheel } from "@/components/DailyWheel";
 import { IconModalShell } from "@/components/IconModalShell";
 import { OPEN_DAILY_EVENT, type OpenDailyDetail } from "@/lib/dailyRiffs";
-import { METRIC_CHANGE_EVENT, dailyMetricKey, recordEvent, awardXp } from "@/lib/metrics";
+import {
+  METRIC_CHANGE_EVENT,
+  dailyMetricKey,
+  weeklyMetricKey,
+  lifetimeMetricKey,
+  recordEvent,
+  awardXp,
+} from "@/lib/metrics";
 import {
   selectDailyChallenges,
   todayDateStr,
+  WEEKLY_TEMPLATES,
+  ACHIEVEMENT_TEMPLATES,
   type DailyChallengeTemplate,
+  type WeeklyChallengeTemplate,
+  type AchievementTemplate,
 } from "@/lib/challenges";
 
 type Tab = "spin" | "daily" | "weekly" | "achievements";
@@ -38,6 +49,8 @@ export function ChallengesManager() {
   const [tab, setTab] = useState<Tab>("spin");
   const [metrics, setMetrics] = useState<Record<string, number>>({});
   const [claimedKeys, setClaimedKeys] = useState<Set<string>>(new Set());
+  const [weeklyClaimedKeys, setWeeklyClaimedKeys] = useState<Set<string>>(new Set());
+  const [achievementClaimedKeys, setAchievementClaimedKeys] = useState<Set<string>>(new Set());
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [originRect, setOriginRect] = useState<
     OpenDailyDetail["originRect"] | null
@@ -51,18 +64,25 @@ export function ChallengesManager() {
   }, [loading, user]);
 
   // Fetch metrics + claims once on open and on metric-change events.
+  // Three claim scopes (daily / weekly / achievement) all live in the
+  // same modal but key off different ledger tables, so we pull them
+  // in parallel.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     async function fetchAll() {
       const supabase = createClient();
-      const [m, c] = await Promise.all([
+      const [m, dailyC, weeklyC, achC] = await Promise.all([
         supabase.rpc("get_user_metrics"),
         supabase.rpc("get_today_claims"),
+        supabase.rpc("get_this_week_claims"),
+        supabase.rpc("get_achievement_claims"),
       ]);
       if (cancelled) return;
       setMetrics((m.data as Record<string, number>) ?? {});
-      setClaimedKeys(new Set((c.data as string[]) ?? []));
+      setClaimedKeys(new Set((dailyC.data as string[]) ?? []));
+      setWeeklyClaimedKeys(new Set((weeklyC.data as string[]) ?? []));
+      setAchievementClaimedKeys(new Set((achC.data as string[]) ?? []));
     }
     fetchAll();
     function onChange() {
@@ -98,11 +118,20 @@ export function ChallengesManager() {
   const today = todayDateStr();
   const templates = useMemo(() => selectDailyChallenges(today), [today]);
 
-  function progressFor(t: DailyChallengeTemplate): number {
+  function progressForDaily(t: DailyChallengeTemplate): number {
     return metrics[dailyMetricKey(t.metric, today)] ?? 0;
   }
+  function progressForWeekly(t: WeeklyChallengeTemplate): number {
+    return metrics[weeklyMetricKey(t.metric)] ?? 0;
+  }
+  function progressForAchievement(t: AchievementTemplate): number {
+    return metrics[lifetimeMetricKey(t.metric)] ?? 0;
+  }
 
-  async function claim(t: DailyChallengeTemplate, sourceEl: HTMLElement | null) {
+  async function claimDaily(
+    t: DailyChallengeTemplate,
+    sourceEl: HTMLElement | null,
+  ) {
     if (!profile || busyKey) return;
     setBusyKey(t.key);
     try {
@@ -117,7 +146,7 @@ export function ChallengesManager() {
         console.warn("claim_daily_challenge error:", error.message);
         return;
       }
-      const result = data as { ok?: boolean; reason?: string } | null;
+      const result = data as { ok?: boolean } | null;
       if (!result?.ok) return;
 
       flyCoinsFrom(sourceEl, t.reward.riffs);
@@ -132,6 +161,68 @@ export function ChallengesManager() {
     }
   }
 
+  async function claimWeekly(
+    t: WeeklyChallengeTemplate,
+    sourceEl: HTMLElement | null,
+  ) {
+    if (!profile || busyKey) return;
+    setBusyKey(t.key);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("claim_weekly_challenge", {
+        p_template_key: t.key,
+        p_metric_key: weeklyMetricKey(t.metric),
+        p_target: t.target,
+        p_riffs: t.reward.riffs,
+      });
+      if (error) {
+        console.warn("claim_weekly_challenge error:", error.message);
+        return;
+      }
+      const result = data as { ok?: boolean } | null;
+      if (!result?.ok) return;
+      flyCoinsFrom(sourceEl, t.reward.riffs);
+      sfxClaim();
+      setWeeklyClaimedKeys((prev) => new Set(prev).add(t.key));
+      // Weekly claims earn more XP than daily — bigger commitment.
+      awardXp(25, "Weekly challenge claimed");
+      await refreshProfile();
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function claimAchievement(
+    t: AchievementTemplate,
+    sourceEl: HTMLElement | null,
+  ) {
+    if (!profile || busyKey) return;
+    setBusyKey(t.key);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("claim_achievement", {
+        p_template_key: t.key,
+        p_metric_key: lifetimeMetricKey(t.metric),
+        p_target: t.target,
+        p_riffs: t.reward.riffs,
+      });
+      if (error) {
+        console.warn("claim_achievement error:", error.message);
+        return;
+      }
+      const result = data as { ok?: boolean } | null;
+      if (!result?.ok) return;
+      flyCoinsFrom(sourceEl, t.reward.riffs);
+      sfxClaim();
+      setAchievementClaimedKeys((prev) => new Set(prev).add(t.key));
+      // Achievements are rare events — give them more XP than weekly.
+      awardXp(50, "Achievement unlocked");
+      await refreshProfile();
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   // Notification dot count: claimable challenges + an unspun daily
   // wheel. Used by RibbonDailyButton via a custom event since this
   // manager owns the count source of truth.
@@ -139,12 +230,20 @@ export function ChallengesManager() {
     let n = 0;
     for (const t of templates) {
       if (claimedKeys.has(t.key)) continue;
-      if (progressFor(t) >= t.target) n++;
+      if (progressForDaily(t) >= t.target) n++;
+    }
+    for (const t of WEEKLY_TEMPLATES) {
+      if (weeklyClaimedKeys.has(t.key)) continue;
+      if (progressForWeekly(t) >= t.target) n++;
+    }
+    for (const t of ACHIEVEMENT_TEMPLATES) {
+      if (achievementClaimedKeys.has(t.key)) continue;
+      if (progressForAchievement(t) >= t.target) n++;
     }
     if (!claimedKeys.has("daily_wheel")) n++;
     return n;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templates, metrics, claimedKeys]);
+  }, [templates, metrics, claimedKeys, weeklyClaimedKeys, achievementClaimedKeys]);
 
   useEffect(() => {
     window.dispatchEvent(
@@ -244,22 +343,60 @@ export function ChallengesManager() {
                 <ChallengeCard
                   key={t.key}
                   template={t}
-                  progress={progressFor(t)}
+                  progress={progressForDaily(t)}
                   claimed={claimedKeys.has(t.key)}
                   busy={busyKey === t.key}
-                  onClaim={(el) => claim(t, el)}
+                  onClaim={(el) => claimDaily(t, el)}
                 />
               ))}
               <NextResetCountdown />
             </div>
           )}
-          {tab === "weekly" && <ComingSoon kind="Weekly challenges" />}
-          {tab === "achievements" && <ComingSoon kind="Achievements" />}
+          {tab === "weekly" && (
+            <div className="flex flex-col gap-2.5">
+              {WEEKLY_TEMPLATES.map((t) => (
+                <ChallengeCard
+                  key={t.key}
+                  template={t}
+                  progress={progressForWeekly(t)}
+                  claimed={weeklyClaimedKeys.has(t.key)}
+                  busy={busyKey === t.key}
+                  onClaim={(el) => claimWeekly(t, el)}
+                />
+              ))}
+              <WeeklyResetCountdown />
+            </div>
+          )}
+          {tab === "achievements" && (
+            <div className="flex flex-col gap-2.5">
+              {ACHIEVEMENT_TEMPLATES.map((t) => (
+                <ChallengeCard
+                  key={t.key}
+                  template={t}
+                  progress={progressForAchievement(t)}
+                  claimed={achievementClaimedKeys.has(t.key)}
+                  busy={busyKey === t.key}
+                  onClaim={(el) => claimAchievement(t, el)}
+                />
+              ))}
+              <p className="mt-2 text-center text-[10px] font-black uppercase tracking-wider text-amber-100/40">
+                Lifetime goals · keep playing to unlock
+              </p>
+            </div>
+          )}
         </div>
         </div>
     </IconModalShell>
   );
 }
+
+// Daily/Weekly/Achievement templates all share the same visible
+// shape — render them through one card so the three tabs feel
+// uniform.
+type AnyChallengeTemplate =
+  | DailyChallengeTemplate
+  | WeeklyChallengeTemplate
+  | AchievementTemplate;
 
 function ChallengeCard({
   template,
@@ -268,7 +405,7 @@ function ChallengeCard({
   busy,
   onClaim,
 }: {
-  template: DailyChallengeTemplate;
+  template: AnyChallengeTemplate;
   progress: number;
   claimed: boolean;
   busy: boolean;
@@ -296,10 +433,20 @@ function ChallengeCard({
       )}
 
       <div className="relative flex items-center gap-3">
-        {/* Emoji in a gold-bordered circle so even an unclaimed card
-            has visual reward. */}
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-stone-900 bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-2xl shadow-[0_2px_0_0_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.5)]">
-          {claimed ? "✓" : template.emoji}
+        {/* Lucide icon in a gold-bordered circle. Used to be an emoji
+            string but emoji rendering is unreliable across older
+            Android/Linux browsers (renders as tofu). Each template
+            picks an icon + color in the data so the visual stays
+            distinct without depending on the OS emoji set. */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-stone-900 bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 shadow-[0_2px_0_0_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.5)]">
+          {claimed ? (
+            <Check className="h-6 w-6 text-emerald-700" strokeWidth={3} />
+          ) : (
+            <template.Icon
+              className={`h-6 w-6 ${template.iconColor}`}
+              strokeWidth={2.5}
+            />
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -347,7 +494,7 @@ function ChallengeCard({
             }`}
           >
             {claimed ? (
-              <span>✓</span>
+              <Check className="h-3.5 w-3.5" strokeWidth={4} />
             ) : busy ? (
               <span>…</span>
             ) : (
@@ -377,7 +524,7 @@ function ChallengeCard({
 function ComingSoon({ kind }: { kind: string }) {
   return (
     <div className="rounded-2xl border-2 border-dashed border-amber-500/50 bg-gradient-to-br from-amber-900/30 via-stone-900 to-amber-900/30 p-8 text-center shadow-[inset_0_1px_0_0_rgba(255,200,80,0.15)]">
-      <div className="text-4xl">🔒</div>
+      <Lock className="mx-auto h-10 w-10 text-stone-400" strokeWidth={2.5} />
       <div className="mt-2 text-base font-black uppercase tracking-[0.2em] text-amber-200">
         {kind}
       </div>
@@ -412,6 +559,36 @@ function NextResetCountdown() {
   return (
     <div className="mt-1 text-center text-[10px] font-black uppercase tracking-wider text-amber-100/50">
       New challenges in · {text}
+    </div>
+  );
+}
+
+// Same idea as NextResetCountdown but counting down to next ISO
+// week boundary (Monday 00:00 UTC). Shown at the bottom of the
+// Weekly tab so the player sees how long they have left to grind.
+function WeeklyResetCountdown() {
+  const [text, setText] = useState("");
+  useEffect(() => {
+    function tick() {
+      const now = new Date();
+      const day = now.getUTCDay() || 7; // Mon=1..Sun=7
+      const daysUntilMonday = 8 - day; // 7 if today is Monday, ..., 1 if Sunday
+      const next = new Date(now);
+      next.setUTCDate(next.getUTCDate() + daysUntilMonday);
+      next.setUTCHours(0, 0, 0, 0);
+      const ms = next.getTime() - now.getTime();
+      const d = Math.floor(ms / 86_400_000);
+      const h = Math.floor((ms % 86_400_000) / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
+      setText(d > 0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m`);
+    }
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className="mt-1 text-center text-[10px] font-black uppercase tracking-wider text-amber-100/50">
+      Resets Monday · {text}
     </div>
   );
 }

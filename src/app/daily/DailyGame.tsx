@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { Snowflake } from "lucide-react";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
 import { GuessInput } from "@/components/game/GuessInput";
@@ -12,11 +12,13 @@ import { SaveProgressNudge } from "@/components/game/SaveProgressNudge";
 import { StreakBadge } from "@/components/game/StreakBadge";
 import { StreakRestoreOffer } from "@/components/game/StreakRestoreOffer";
 import { BonusRoundPrompt } from "@/components/game/BonusRoundPrompt";
+import { XpRewardPanel } from "@/components/XpRewardPanel";
 import type { RiffleTrack } from "@/lib/itunes";
 import { fuzzyMatchTitle } from "@/lib/utils";
 import { sfxSkip, sfxWrongAttempt } from "@/lib/sfx";
 import { deobfuscateTitle } from "@/lib/obfuscate";
 import { recordEvent, awardXp } from "@/lib/metrics";
+import { fireRiffsBigReward } from "@/lib/riffsReward";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useAudioStore } from "@/lib/store/audio";
@@ -88,7 +90,7 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
   // identity object updates (e.g. profile fetch resolves and bumps
   // user). Without it daily_results' unique (user_id, puzzle_date)
   // index returns 409 on the second insert.
-  const { user, refreshStreak } = useAuth();
+  const { user, refreshStreak, mergeProfile } = useAuth();
   const submittedRef = useRef<string | null>(null);
   const [freezeConsumed, setFreezeConsumed] = useState(false);
   useEffect(() => {
@@ -115,7 +117,13 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
           console.warn("record_daily_result failed:", error.message);
           return;
         }
-        const result = data as { freeze_consumed?: boolean } | null;
+        const result = data as
+          | {
+              freeze_consumed?: boolean;
+              riffs_granted?: number;
+              new_balance?: number | null;
+            }
+          | null;
         if (result?.freeze_consumed) setFreezeConsumed(true);
         refreshStreak();
         // Bump challenge metrics for solving the daily, and grant
@@ -123,6 +131,20 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
         if (done.correct) {
           recordEvent("daily_solve");
           awardXp(50, "Daily Riffle solved");
+        }
+        // Server-side 10-Riff grant on first correct submission of
+        // the day. The fly-to-balance overlay handles the visual;
+        // we merge the new balance after the animation lands so the
+        // pill bumps in sync with the icon arriving.
+        const granted = result?.riffs_granted ?? 0;
+        if (granted > 0) {
+          fireRiffsBigReward(granted);
+          if (typeof result?.new_balance === "number") {
+            const newBalance = result.new_balance;
+            window.setTimeout(() => {
+              mergeProfile({ coin_balance: newBalance });
+            }, 1700);
+          }
         }
       });
   }, [done, track.id, user, refreshStreak]);
@@ -202,8 +224,9 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
       {done && (
         <>
           {freezeConsumed && (
-            <div className="rounded-2xl border-2 border-cyan-400 bg-cyan-400/10 px-4 py-3 text-center text-sm font-black uppercase tracking-wider text-cyan-200 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
-              ❄️ Streak Freeze used — yesterday saved
+            <div className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-cyan-400 bg-cyan-400/10 px-4 py-3 text-center text-sm font-black uppercase tracking-wider text-cyan-200 shadow-[0_3px_0_0_rgba(0,0,0,0.9)]">
+              <Snowflake className="h-4 w-4 text-cyan-300" strokeWidth={2.5} />
+              Streak Freeze used — yesterday saved
             </div>
           )}
           <RevealCard
@@ -215,84 +238,13 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
               guesses: (done.guesses ?? guesses).map((g) => g.kind),
             }}
           />
-          {done.correct && <DailyXpReward awarded={50} />}
+          {done.correct && <XpRewardPanel awarded={50} />}
           <BonusRoundPrompt />
           <NextDailyCountdown />
           <KeepPlayingCTA />
           <SaveProgressNudge />
         </>
       )}
-    </div>
-  );
-}
-
-// XP / level feedback panel that appears on the reveal screen so the
-// player sees what solving the daily earned them. Without this, the
-// award fires silently — HomeStats only renders on /, and the user
-// never navigates back there before the +XP chip dismisses.
-//
-// On mount we display the bar at the pre-award value (current xp
-// minus the awarded amount, clamped at 0 in case the grant pushed
-// them across a level), then transition to the actual value so the
-// bar visibly fills. If the level number changes between mount and
-// the next render, we re-anchor — that catches the multi-level case
-// cleanly without trying to track previous-level XP.
-function DailyXpReward({ awarded }: { awarded: number }) {
-  const { profile } = useAuth();
-  const [displayXp, setDisplayXp] = useState<number | null>(null);
-  const [displayLevel, setDisplayLevel] = useState<number | null>(null);
-  const startedRef = useRef(false);
-
-  useEffect(() => {
-    if (!profile) return;
-    if (!startedRef.current) {
-      // First render after profile is available. Anchor the bar at
-      // the pre-award value (or 0 if the grant crossed a level) and
-      // schedule the transition to the actual value.
-      startedRef.current = true;
-      const before = Math.max(0, profile.xp - awarded);
-      setDisplayXp(before);
-      setDisplayLevel(profile.level);
-      const t = window.setTimeout(() => {
-        setDisplayXp(profile.xp);
-        setDisplayLevel(profile.level);
-      }, 350);
-      return () => window.clearTimeout(t);
-    }
-    // Subsequent profile updates (e.g. another mutation lands while
-    // the player is still on the reveal): just track the latest.
-    setDisplayXp(profile.xp);
-    setDisplayLevel(profile.level);
-  }, [profile, awarded]);
-
-  if (!profile || displayXp == null || displayLevel == null) return null;
-
-  const threshold = 50 * displayLevel;
-  const ratio = Math.min(1, displayXp / threshold);
-
-  return (
-    <div className="w-full overflow-hidden rounded-2xl border-2 border-amber-700 bg-gradient-to-br from-stone-900 via-amber-950 to-stone-900 p-4 shadow-[0_3px_0_0_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,200,80,0.15)]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-amber-300/70">
-          <Sparkles className="h-3 w-3" />
-          XP earned
-        </div>
-        <span className="inline-flex items-center gap-1 rounded-full border-2 border-stone-900 bg-gradient-to-b from-amber-300 to-amber-500 px-3 py-0.5 text-xs font-black text-stone-900 shadow-[0_2px_0_0_rgba(0,0,0,0.6)]">
-          +{awarded} XP
-        </span>
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider">
-        <span className="text-amber-300">Lv {displayLevel}</span>
-        <div className="h-3 flex-1 overflow-hidden rounded-full border-2 border-stone-900 bg-stone-950/80 shadow-[inset_0_1px_0_0_rgba(0,0,0,0.4)]">
-          <div
-            className="h-full bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 transition-[width] duration-1000 ease-out"
-            style={{ width: `${Math.max(ratio * 100, 4)}%` }}
-          />
-        </div>
-        <span className="font-mono tabular-nums text-amber-100/60">
-          {displayXp}/{threshold}
-        </span>
-      </div>
     </div>
   );
 }

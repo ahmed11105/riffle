@@ -8,6 +8,7 @@ import { VolumeControl } from "@/components/VolumeControl";
 import { RevealCard } from "@/components/game/RevealCard";
 import { SoloAdBreak } from "@/components/game/SoloAdBreak";
 import { HintPanel } from "@/components/game/HintPanel";
+import { XpRewardPanel } from "@/components/XpRewardPanel";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useAdminMode } from "@/lib/admin";
 import type { RiffleTrack } from "@/lib/itunes";
@@ -309,13 +310,20 @@ export function SoloGame() {
         </>
       )}
       {done && (
-        <RevealCard
-          track={current}
-          correct={done.correct}
-          levelSolved={done.levelSolved}
-          onNext={next}
-          nextLabel="Next song"
-        />
+        <>
+          <RevealCard
+            track={current}
+            correct={done.correct}
+            levelSolved={done.levelSolved}
+            onNext={next}
+            nextLabel="Next song"
+          />
+          {done.correct && (
+            <XpRewardPanel
+              awarded={done.levelSolved === LEVELS[0] ? 15 : 10}
+            />
+          )}
+        </>
       )}
       {showingAd && <SoloAdBreak onContinue={dismissAdAndAdvance} />}
     </div>

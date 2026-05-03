@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Gift } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -120,12 +121,17 @@ export function ActiveEventBanner() {
       </div>
       <div className="border-t-2 border-stone-900 bg-stone-900/60 px-5 py-3">
         <div className="mb-1.5 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-amber-100/70">
-          <span>
-            {claimableMilestoneIdx >= 0
-              ? `🎁 Milestone ready — claim ${milestones[claimableMilestoneIdx].riffs} Riffs`
-              : nextMilestone
-                ? `Next milestone: ${nextThreshold} pts → ${nextMilestone.riffs} Riffs`
-                : "All milestones claimed"}
+          <span className="inline-flex items-center gap-1.5">
+            {claimableMilestoneIdx >= 0 ? (
+              <>
+                <Gift className="h-3.5 w-3.5 text-rose-400" strokeWidth={2.5} />
+                Milestone ready — claim {milestones[claimableMilestoneIdx].riffs} Riffs
+              </>
+            ) : nextMilestone ? (
+              `Next milestone: ${nextThreshold} pts → ${nextMilestone.riffs} Riffs`
+            ) : (
+              "All milestones claimed"
+            )}
           </span>
           <span>{Math.min(score, nextThreshold)}/{nextThreshold}</span>
         </div>

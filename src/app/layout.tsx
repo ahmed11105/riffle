@@ -18,6 +18,7 @@ import { TournamentManager } from "@/components/TournamentManager";
 import { CoinFlyLayer } from "@/components/CoinFlyLayer";
 import { PageChrome } from "@/components/PageChrome";
 import { LevelUpToast } from "@/components/LevelUpToast";
+import { RiffsBigRewardOverlay } from "@/components/RiffsBigRewardOverlay";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,6 +113,7 @@ export default function RootLayout({
               <TournamentManager />
             </Suspense>
             <CoinFlyLayer />
+            <RiffsBigRewardOverlay />
             <LevelUpToast />
             {children}
             <Footer />

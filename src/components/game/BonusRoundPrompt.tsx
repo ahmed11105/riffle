@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Gift } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useRiffs } from "@/lib/riffs/useRiffs";
 import { RiffsIcon } from "@/components/RiffsIcon";
@@ -67,8 +67,9 @@ export function BonusRoundPrompt() {
   if (state === "claimed") {
     return (
       <div className="w-full max-w-md rounded-2xl border-4 border-emerald-700 bg-emerald-100 p-4 text-center text-emerald-900 shadow-[0_4px_0_0_rgba(0,0,0,0.9)]">
-        <p className="text-sm font-black uppercase tracking-wider">
-          +{REWARD} Riffs added 🎁
+        <p className="inline-flex items-center gap-1.5 text-sm font-black uppercase tracking-wider">
+          +{REWARD} Riffs added
+          <Gift className="h-4 w-4 text-rose-600" strokeWidth={2.5} />
         </p>
         <p className="mt-1 text-xs font-bold opacity-80">
           Come back tomorrow for another bonus.

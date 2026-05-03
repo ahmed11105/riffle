@@ -15,9 +15,15 @@ import { SimulationBanner } from "@/components/SimulationBanner";
 // Mounted once in the root layout (before {children}) so every page
 // renders below it. Per-page <header> blocks containing the same
 // Logo + nav have been removed.
+//
+// Row 1 is sticky at the top of the viewport so the brand mark and
+// nav stay anchored as the player scrolls. The ribbon row (icons +
+// balance) scrolls naturally so the player isn't paying for the
+// streak/balance permanent space at the cost of viewport real
+// estate — they just scroll up to peek if needed.
 export function PageChrome() {
   return (
-    <header className="w-full">
+    <header className="sticky top-0 z-30 w-full bg-stone-950/85 backdrop-blur-sm">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-center px-6 pt-4 pb-3 sm:justify-between sm:pt-6 sm:pb-4">
         <Logo />
         <MainNav />

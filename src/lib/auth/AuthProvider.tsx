@@ -199,13 +199,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithEmail = useCallback(
     async (email: string) => {
-      // Magic-link upgrade. Supabase will keep the existing user_id and
-      // simply attach the email identity, so progress/Riffs are preserved.
+      // Three real-world scenarios, two auth calls:
+      //
+      //   1. Anonymous user claiming a NEW email → updateUser({ email }).
+      //      Keeps the same user_id, attaches the email; Supabase fires
+      //      the "Confirm Email Change" template. Progress preserved.
+      //
+      //   2. Anonymous user trying to sign INTO an existing account
+      //      (e.g. they signed out earlier — sign-out always re-creates
+      //      a fresh anonymous session — and now want their old
+      //      account back). updateUser would fail here with "A user
+      //      with this email address has already been registered" since
+      //      the email already maps to a permanent user.
+      //      Fall back to signInWithOtp → "Magic Link" template fires
+      //      → click → signed into the existing account, the throwaway
+      //      anonymous user is abandoned.
+      //
+      //   3. Fully signed-out user → signInWithOtp directly.
+      //
+      // The previous version always picked one path and the wrong
+      // scenario silently failed: case 2 surfaced the raw "already
+      // registered" string to the user as if it were a refusal.
+      const emailRedirectTo = `${window.location.origin}/auth/callback`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const isAnon = session?.user?.is_anonymous === true;
+
+      if (isAnon) {
+        const { error } = await supabase.auth.updateUser({ email });
+        if (!error) return { error: null };
+        // Fall through to magic-link sign-in only when the failure is
+        // specifically "this email already exists". Other errors
+        // (rate-limits, validation, transport) are real and should
+        // bubble up unchanged.
+        const msg = error.message.toLowerCase();
+        const alreadyRegistered =
+          msg.includes("already") &&
+          (msg.includes("register") || msg.includes("exists"));
+        if (!alreadyRegistered) return { error: error.message };
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { emailRedirectTo },
       });
       return { error: error?.message ?? null };
     },

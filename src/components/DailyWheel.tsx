@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import {
+  Sparkles,
+  Coins,
+  Lightbulb,
+  Gem,
+  Snowflake,
+  Crown,
+  PartyPopper,
+  type LucideIcon,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { sfxClaim, sfxSkip } from "@/lib/sfx";
@@ -25,21 +34,25 @@ type CellId = 0 | 1 | 2 | 3 | 5 | 6 | 7 | 8;
 type CellDef = {
   id: CellId;
   label: string;
-  emoji: string;
+  Icon: LucideIcon;
+  iconColor: string;
   riffs?: number;
   bonus?: "hint" | "freeze";
 };
 
+// Lucide icons + per-cell colours replace emojis so the wheel renders
+// identically on devices that don't have an emoji font (older Android,
+// some Linux browsers, Windows in safe mode).
 const CELLS: CellDef[] = [
-  { id: 0, emoji: "💰", label: "5", riffs: 5 },
-  { id: 1, emoji: "💰", label: "10", riffs: 10 },
-  { id: 2, emoji: "💰", label: "25", riffs: 25 },
-  { id: 3, emoji: "💡", label: "Hint", bonus: "hint" },
+  { id: 0, Icon: Coins, iconColor: "text-amber-300", label: "5", riffs: 5 },
+  { id: 1, Icon: Coins, iconColor: "text-amber-300", label: "10", riffs: 10 },
+  { id: 2, Icon: Coins, iconColor: "text-amber-300", label: "25", riffs: 25 },
+  { id: 3, Icon: Lightbulb, iconColor: "text-amber-300", label: "Hint", bonus: "hint" },
   // 4 is the center SPIN cell, handled separately
-  { id: 5, emoji: "💎", label: "50", riffs: 50 },
-  { id: 6, emoji: "❄️", label: "Freeze", bonus: "freeze" },
-  { id: 7, emoji: "💰", label: "15", riffs: 15 },
-  { id: 8, emoji: "👑", label: "100", riffs: 100 },
+  { id: 5, Icon: Gem, iconColor: "text-cyan-300", label: "50", riffs: 50 },
+  { id: 6, Icon: Snowflake, iconColor: "text-cyan-200", label: "Freeze", bonus: "freeze" },
+  { id: 7, Icon: Coins, iconColor: "text-amber-300", label: "15", riffs: 15 },
+  { id: 8, Icon: Crown, iconColor: "text-amber-200", label: "100", riffs: 100 },
 ];
 
 // Highlight visits this order while spinning. Center (4) is skipped.
@@ -201,7 +214,7 @@ export function DailyWheel() {
                 {spinState === "spinning" ? (
                   <span className="text-xs">…</span>
                 ) : isLanded ? (
-                  <span className="text-lg">🎉</span>
+                  <PartyPopper className="h-6 w-6 text-stone-900" strokeWidth={2.5} />
                 ) : isLocked ? (
                   <span className="text-[10px]">Locked</span>
                 ) : (
@@ -228,7 +241,13 @@ export function DailyWheel() {
                     : "border-amber-700/50 bg-gradient-to-br from-stone-800 to-stone-900 text-amber-100"
               }`}
             >
-              <span className="text-xl leading-none">{def.emoji}</span>
+              <def.Icon
+                className={`h-5 w-5 ${
+                  isLanded || isHighlight ? "text-stone-900" : def.iconColor
+                }`}
+                strokeWidth={2.5}
+                fill={def.Icon === Coins || def.Icon === Gem ? "currentColor" : "none"}
+              />
               <span className="flex items-center gap-0.5 text-[10px]">
                 {def.riffs != null ? (
                   <>
