@@ -75,13 +75,25 @@ function toRiffleTrack(r: ItunesResult): RiffleTrack | null {
   };
 }
 
-export async function itunesSearch(term: string, limit = 25): Promise<RiffleTrack[]> {
+// `attribute` lets the caller scope the iTunes match to a single
+// field. `songTerm` matches only the song title — used by the
+// typeahead so "drake" doesn't surface every Drake song under his
+// name and let the player guess by recognising the artist instead
+// of the track. The other callers (artist search, random picker,
+// admin pickTrack) leave it unset so iTunes' default broad match
+// applies.
+export async function itunesSearch(
+  term: string,
+  limit = 25,
+  opts: { attribute?: "songTerm" | "artistTerm" } = {},
+): Promise<RiffleTrack[]> {
   const u = new URL("https://itunes.apple.com/search");
   u.searchParams.set("term", term);
   u.searchParams.set("media", "music");
   u.searchParams.set("entity", "song");
   u.searchParams.set("limit", String(limit));
   u.searchParams.set("explicit", "Yes");
+  if (opts.attribute) u.searchParams.set("attribute", opts.attribute);
   const res = await fetch(u.toString(), { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`iTunes search failed: ${res.status}`);
   const json = (await res.json()) as ItunesSearchResponse;

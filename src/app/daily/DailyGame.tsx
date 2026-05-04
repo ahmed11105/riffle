@@ -193,12 +193,18 @@ export function DailyGame({ track: serverTrack }: { track: RiffleTrack }) {
       // truthy, so the audio stops naturally; no explicit pause needed.
       setDone({ correct: false, guesses: nextArr });
     } else {
-      // Audio keeps playing through the skip — the AudioClip effect
-      // re-runs with the new (longer) maxSeconds and reschedules its
-      // auto-stop timer to the new boundary. Audio only pauses on
-      // explicit play/pause click or when it hits the snippet end.
+      // Audio should keep playing through to the new (longer)
+      // boundary. We always force `playing = true` here even if the
+      // auto-stop timer at the previous cut-off has just fired and
+      // set us back to false — without this the player would mash
+      // skip "during playback" and end up with silent audio because
+      // the cutoff fired ~50ms before their click. AudioClip's
+      // atOrPastEnd check leaves currentTime alone since the new
+      // maxSeconds is strictly bigger, so playback resumes at the
+      // previous boundary instead of restarting.
       sfxSkip();
       setLevelIdx(levelIdx + 1);
+      setPlaying(true);
     }
   }
 

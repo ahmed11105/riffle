@@ -228,12 +228,15 @@ export function SoloGame() {
       setStats((s) => ({ ...s, played: s.played + 1 }));
       markPlayed(current.id);
     } else {
-      // Audio keeps playing through the skip — the AudioClip effect
-      // re-runs with the new (longer) maxSeconds and reschedules its
-      // auto-stop timer. Audio only pauses on explicit play/pause
-      // click or when it hits the snippet end.
+      // Force playing=true so the snippet keeps going through the
+      // new (longer) cut-off. If the auto-stop timer at the previous
+      // boundary just fired and flipped playing→false a few frames
+      // before the skip click, this re-arms playback and AudioClip
+      // resumes from currentTime (the previous boundary) into the
+      // newly-extended window.
       sfxSkip();
       setLevelIdx(levelIdx + 1);
+      setPlaying(true);
     }
   }
 

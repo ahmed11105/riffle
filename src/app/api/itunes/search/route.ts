@@ -47,8 +47,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (!term) return NextResponse.json({ tracks: [] });
-    const tracks = await itunesSearch(term, 20);
-    return NextResponse.json({ tracks });
+    // attribute=songTerm restricts the iTunes match to song titles
+    // only — typing an artist name shouldn't surface that artist's
+    // catalogue as guess candidates, otherwise the player can win
+    // by recognising the artist instead of the song. Backstop
+    // filter strips any straggler that iTunes returns whose title
+    // doesn't actually contain the typed string.
+    const tracks = await itunesSearch(term, 30, { attribute: "songTerm" });
+    const t = term.toLowerCase();
+    const filtered = tracks.filter((track) =>
+      track.title.toLowerCase().includes(t),
+    );
+    return NextResponse.json({ tracks: filtered.slice(0, 20) });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
