@@ -30,9 +30,13 @@ export function AudioClip({
   trackArtist,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const stopTimerRef = useRef<number | null>(null);
   const onEndedRef = useRef(onEnded);
   onEndedRef.current = onEnded;
+  // Always read the latest maxSeconds inside the rAF cutoff loop.
+  // Without this, advancing levels mid-playback would leave the loop
+  // closing over the old cap.
+  const maxSecondsRef = useRef(maxSeconds);
+  maxSecondsRef.current = maxSeconds;
   // Drives the playhead bar above the play button. Updated from the
   // audio element's timeupdate event while playing.
   const [currentTime, setCurrentTime] = useState(0);
@@ -57,18 +61,29 @@ export function AudioClip({
     };
   }, []);
 
-  // Drive the playhead bar with a requestAnimationFrame loop while
-  // playing. The audio element's `timeupdate` event fires at only
-  // 4-66Hz which makes the fill visibly chunky; rAF reads
-  // currentTime at the display refresh rate (typically 60Hz) for a
-  // smooth fill.
+  // Drive the playhead bar AND auto-stop with a requestAnimationFrame
+  // loop while playing. We deliberately *don't* schedule the stop
+  // with setTimeout: setTimeout is anchored to wall-clock time at
+  // play() invocation, but the audio engine takes a beat to actually
+  // start producing sound, so a wall-clock timer fires a sliver
+  // before the audio reaches the cap (the user hears it stop short
+  // and has to hit play again to drain the last fraction of a
+  // second). Reading the audio's own currentTime is the only
+  // glitch-free clock — it advances iff the engine is actually
+  // playing.
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
     if (!playing) return;
     let raf = 0;
     const tick = () => {
-      setCurrentTime(a.currentTime);
+      const t = a.currentTime;
+      setCurrentTime(t);
+      if (t >= maxSecondsRef.current) {
+        a.pause();
+        onEndedRef.current();
+        return;
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -101,9 +116,8 @@ export function AudioClip({
     if (!a) return;
     if (playing) {
       // Resume from where the playhead is unless the snippet has
-      // already played all the way to the end (or beyond — the
-      // stop timer can leave currentTime at maxSeconds). In that
-      // case rewind so the next click replays the whole clip.
+      // already played all the way to the end. In that case rewind
+      // so the next click replays the whole clip from 0.
       const atOrPastEnd = a.currentTime >= maxSeconds - 0.01;
       if (atOrPastEnd) {
         try {
@@ -113,24 +127,13 @@ export function AudioClip({
       }
       a.play().catch(() => onEndedRef.current());
       registerAudio(a, pathname, maxSeconds, trackTitle, trackArtist, trackId);
-      if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
-      // Schedule the auto-stop based on time remaining in this clip,
-      // not the full clip length, so resumed playback ends at the
-      // same moment a fresh play would.
-      const remainingMs = Math.max(0, (maxSeconds - a.currentTime) * 1000);
-      stopTimerRef.current = window.setTimeout(() => {
-        a.pause();
-        onEndedRef.current();
-      }, remainingMs);
+      // Auto-stop is handled by the rAF loop above (which polls
+      // a.currentTime). No wall-clock timer here.
     } else {
       // Pause in place — currentTime is preserved so the next play
       // resumes from the same spot.
       a.pause();
-      if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
     }
-    return () => {
-      if (stopTimerRef.current) window.clearTimeout(stopTimerRef.current);
-    };
   }, [playing, maxSeconds, src, registerAudio, pathname, trackId, trackTitle, trackArtist]);
 
   // Bar fill: 0..1 of total clip length. Caps at 1 so we never
