@@ -4,6 +4,7 @@ import { Logo } from "@/components/branding/Logo";
 import { MainNav } from "@/components/MainNav";
 import { RibbonDailyButton } from "@/components/ribbon/RibbonDailyButton";
 import { RibbonTournamentButton } from "@/components/ribbon/RibbonTournamentButton";
+import { RibbonStats } from "@/components/ribbon/RibbonStats";
 import { RibbonRiffsBalance } from "@/components/ribbon/RibbonRiffsBalance";
 import { SimulationBanner } from "@/components/SimulationBanner";
 
@@ -31,11 +32,16 @@ export function PageChrome() {
       <div className="mx-auto w-full max-w-5xl px-6">
         <div className="border-t-2 border-amber-100/10" aria-hidden />
       </div>
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-6 pt-3 pb-4">
-        <div className="flex items-center gap-2">
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-6 pt-3 pb-4 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           <RibbonDailyButton />
           <RibbonTournamentButton />
         </div>
+        <RibbonStats />
+        {/* Flex spacer absorbs any leftover horizontal space so the
+            stats stay compact next to the icons and the Riffs pill
+            stays anchored on the right. */}
+        <div className="flex-1" aria-hidden />
         <RibbonRiffsBalance />
       </div>
       <SimulationBanner />

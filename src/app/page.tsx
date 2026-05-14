@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Mascot } from "@/components/branding/Mascot";
-import { HomeStats } from "@/components/HomeStats";
 import { HomeHelpLinks } from "@/components/HomeHelpLinks";
 import { StarterPackOffer } from "@/components/StarterPackOffer";
 import { DailyWheelAutoShow } from "@/components/DailyWheelAutoShow";
@@ -37,7 +36,6 @@ export default function Home() {
           </Link>
         </div>
 
-        <HomeStats />
         <div className="mt-6 w-full">
           <StarterPackOffer />
         </div>
