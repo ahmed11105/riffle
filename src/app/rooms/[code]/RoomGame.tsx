@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pause, Play, SkipForward, X, LogOut, XCircle, Share2, Check, Medal } from "lucide-react";
+import { Pause, Play, SkipForward, X, LogOut, XCircle, Share2, Check, Medal, Crown } from "lucide-react";
 import { Logo } from "@/components/branding/Logo";
 import { AudioClip } from "@/components/game/AudioClip";
 import { ClipLadder } from "@/components/game/ClipLadder";
@@ -846,7 +846,7 @@ function Lobby({
 }: {
   code: string;
   isHost: boolean;
-  players: { display_name: string }[];
+  players: { display_name: string; is_host?: boolean }[];
   me: string;
   onStart: () => void;
   advancing: boolean;
@@ -885,6 +885,13 @@ function Lobby({
                   : "flex items-center gap-1 rounded-full bg-stone-100 px-3 py-0.5 text-xs font-black text-stone-700"
               }
             >
+              {p.is_host && (
+                <Crown
+                  className="h-3 w-3 text-amber-700"
+                  strokeWidth={2.5}
+                  aria-label="Host"
+                />
+              )}
               {p.display_name}
               {isHost && p.display_name !== me && (
                 <button
@@ -929,22 +936,27 @@ function Lobby({
         </div>
       )}
 
-      <div className="flex items-center justify-center gap-3">
+      {/* Leave / Close room exits — used to be muted text links that
+          blended into the lobby copy; promoted to proper outlined
+          buttons with bigger icons so they're easy to spot when a
+          player wants out. Close is rose-tinted to flag its
+          destructive scope (ends the room for everyone). */}
+      <div className="flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={onLeave}
-          className="flex items-center gap-2 text-xs uppercase tracking-wider text-amber-100/50 hover:text-rose-400"
+          className="inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-stone-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-amber-200"
         >
-          <LogOut className="h-3 w-3" />
+          <LogOut className="h-4 w-4" strokeWidth={2.5} />
           Leave room
         </button>
         {isHost && (
           <button
             type="button"
             onClick={onEnd}
-            className="flex items-center gap-2 text-xs uppercase tracking-wider text-amber-100/50 hover:text-rose-400"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-rose-500 px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-rose-600"
           >
-            <XCircle className="h-3 w-3" />
+            <XCircle className="h-4 w-4" strokeWidth={2.5} />
             Close room
           </button>
         )}
@@ -957,7 +969,7 @@ function Leaderboard({
   players,
   me,
 }: {
-  players: { display_name: string; bank: number; correct_count: number }[];
+  players: { display_name: string; bank: number; correct_count: number; is_host?: boolean }[];
   me: string;
 }) {
   const sorted = [...players].sort((a, b) => b.bank - a.bank);
@@ -973,6 +985,13 @@ function Leaderboard({
               : "flex items-center gap-2 rounded-full bg-stone-100/10 px-3 py-1 text-xs font-black text-amber-100"
           }
         >
+          {p.is_host && (
+            <Crown
+              className={`h-3 w-3 ${p.display_name === me ? "text-amber-700" : "text-amber-300"}`}
+              strokeWidth={2.5}
+              aria-label="Host"
+            />
+          )}
           <span className="truncate">{p.display_name}</span>
           <span className="font-mono text-[10px] text-amber-600">{p.bank}</span>
         </div>
@@ -994,7 +1013,7 @@ function FinalResults({
   onArtistsChange,
   onRoundsChange,
 }: {
-  players: { display_name: string; bank: number; correct_count: number }[];
+  players: { display_name: string; bank: number; correct_count: number; is_host?: boolean }[];
   me: string;
   isHost: boolean;
   onBackToLobby: () => void;
@@ -1073,7 +1092,16 @@ function FinalResults({
                       <>#{i + 1}</>
                     )}
                   </span>
-                  <span className="font-black">{p.display_name}</span>
+                  <span className="inline-flex items-center gap-1.5 font-black">
+                    {p.is_host && (
+                      <Crown
+                        className="h-4 w-4 text-amber-700"
+                        strokeWidth={2.5}
+                        aria-label="Host"
+                      />
+                    )}
+                    {p.display_name}
+                  </span>
                 </div>
                 <div className="text-right">
                   <div className="font-black">{p.bank} coins</div>
@@ -1102,8 +1130,9 @@ function FinalResults({
       <button
         type="button"
         onClick={onExit}
-        className="text-xs uppercase tracking-wider text-amber-100/60 hover:text-amber-200"
+        className="inline-flex items-center gap-2 rounded-full border-2 border-stone-900 bg-stone-50 px-5 py-2 text-xs font-black uppercase tracking-wider text-stone-900 shadow-[0_3px_0_0_rgba(0,0,0,0.9)] transition active:translate-y-0.5 active:shadow-[0_1px_0_0_rgba(0,0,0,0.9)] hover:bg-amber-200"
       >
+        <LogOut className="h-4 w-4" strokeWidth={2.5} />
         Exit to rooms list
       </button>
     </div>
