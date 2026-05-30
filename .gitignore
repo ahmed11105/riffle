@@ -20,6 +20,9 @@
 # production
 /build
 
+# local playtest screenshots
+/playtest/
+
 # misc
 .DS_Store
 *.pem
